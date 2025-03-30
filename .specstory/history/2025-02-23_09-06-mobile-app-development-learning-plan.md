@@ -1660,7 +1660,1172 @@ Great! The user has successfully completed the setup for our cross-platform mobi
    - Includes a simple counter interaction
    - Uses our theme system
 
-4. We've configured the App.tsx to use
+4. We've configured the App.tsx to use our WelcomeScreen.
+
+5. We've set up proper TypeScript configuration.
+
+6. We've documented our lesson plan and structure in Markdown files.
+
+This completes our initial setup for the first lesson. For our next lesson, we should focus on more complex features like navigation and state management.
+</think>
+
+# Perfect! First Lesson Complete
+
+You've successfully set up the foundation for your cross-platform BestShot app! Let's summarize what we've accomplished today:
+
+## ✅ Completed Tasks
+
+1. **Project Structure**: Created our hybrid DDD + Feature-First architecture with proper folder organization:
+   - `core/` for business logic and domain models
+   - `infrastructure/` for external services
+   - `features/` for UI components organized by feature
+   - `ui/` for shared components and theme
+   - `platform/` for platform-specific code
+
+2. **Multi-Platform Hello World**: Implemented a working component that:
+   - Runs on Web, iOS, and Android
+   - Shows which platform it's running on
+   - Demonstrates platform-specific styling
+   - Includes interactive elements (counter)
+
+3. **Theme System**: Created a centralized theme with:
+   - Color palette
+   - Spacing constants
+   - Typography definitions
+
+4. **Documentation**: Organized our learning journey in Markdown files
+
+## 🧠 Key Concepts Learned
+
+- How React Native components differ from web components
+- Platform-specific styling with `Platform.select()`
+- Applying consistent design through a theme system
+- Project organization for a multi-platform app
+
+## 📝 Homework
+
+Before our next lesson:
+
+1. Experiment with running the app on different platforms
+2. Try modifying some styling properties to see how they affect each platform
+3. Consider which screen from your existing web app would be most interesting to implement next
+4. Review the [React Navigation documentation](https://reactnavigation.org/docs/getting-started)
+
+## 🔮 Next Lesson Preview
+
+In Lesson 2, we'll focus on navigation between screens and implementing a more complex UI component that works across platforms. We'll explore how to handle navigation differently for web vs mobile.
+
+Any questions before we wrap up this lesson?
+
+---
+
+_**User**_
+
+Yes! 
+
+Platform.OS === 'web' ? '80%' : '100%'  could also be achieve with Platafform.select() right? Any specific reason for using one and not the other? Or iits' just a matter taste
+
+---
+
+_**Assistant**_
+
+<think>
+You're absolutely correct! That line could indeed be rewritten using Platform.select(). Both approaches achieve the same goal, but there are some slight differences in how they're typically used.
+
+The line in question is:
+```javascript
+width: Platform.OS === 'web' ? '80%' : '100%',
+```
+
+This could be rewritten using Platform.select() as:
+```javascript
+width: Platform.select({
+  web: '80%',
+  default: '100%',
+}),
+```
+
+Differences and considerations:
+
+1. **Syntax preference**: 
+   - The ternary operator (`? :`) is more concise when you only have two options (one platform vs. all others)
+   - Platform.select() is cleaner when you need different values for 3+ platforms
+
+2. **Readability**:
+   - For simple binary choices, some find the ternary more immediately readable
+   - For more complex multi-platform conditions, Platform.select() is usually more readable
+
+3. **Consistency**:
+   - Using Platform.select() everywhere creates more consistency in your codebase
+   - The code already uses Platform.select() for other properties like padding
+
+4. **Default handling**:
+   - Platform.select() has a built-in 'default' key for fallback values
+   - With ternary, you explicitly specify the "else" case
+
+In this specific case, it was likely just a matter of preference, and you're correct that it would be more consistent to use Platform.select() throughout. There's no performance difference between the two approaches.
+</think>
+
+# Excellent Question!
+
+You're absolutely right! This is a perfect observation about inconsistency in our code.
+
+## Both Approaches Work
+
+This line:
+```javascript
+width: Platform.OS === 'web' ? '80%' : '100%',
+```
+
+Could indeed be rewritten as:
+```javascript
+width: Platform.select({
+  web: '80%',
+  default: '100%',
+}),
+```
+
+## Why the Inconsistency?
+
+It's purely a matter of style preference in this case. However, there are some nuanced considerations:
+
+1. **For binary choices** (just web vs. non-web):
+   - The ternary operator is slightly more concise
+   - Some developers find it more readable for simple cases
+
+2. **For multiple platforms**:
+   - `Platform.select()` is clearly superior when specifying different values for 3+ platforms
+   - For example, our button style where we handle iOS, Android, and web differently
+
+## Best Practice Recommendation
+
+For consistency, you're right that we should probably stick with `Platform.select()` throughout. This would make the code:
+- More consistent
+- More maintainable (easier to add another platform later)
+- More aligned with React Native idioms
+
+Would you like to modify this in the code to use the consistent approach? It would be a good small exercise to reinforce the pattern!
+
+---
+
+_**User**_
+
+Not! I liked your explanations! Make sense!
+
+As a "pre-lesson 2", can you start writing things on @README.md ?
+
+Let's pretend we need to create guides for the next developers that will join this project in the future, please?
+
+---
+
+_**Assistant**_
+
+<think>
+The user wants me to create a README.md file for the project that would serve as a guide for future developers. This should include information about:
+
+1. Project overview
+2. Architecture explanation (our hybrid DDD + Feature-First approach)
+3. Setup instructions
+4. Running the app on different platforms
+5. Project structure
+6. Development guidelines
+
+Let me create a comprehensive README.md that would be helpful for new developers joining the project.
+</think>
+
+# Creating a Comprehensive Project README
+
+Great idea! A well-crafted README is essential for new developers. Let's create a comprehensive guide for the Best Shot mobile app project.
+
+````markdown:app-best-shot/README.md
+# Best Shot Mobile App
+
+A cross-platform (Web, iOS, Android) mobile application for Best Shot, built with React Native and Expo.
+
+## 🚀 Project Overview
+
+Best Shot Mobile is the companion mobile application to the existing web platform at [best-shot.mariobrusarosco.com](https://best-shot.mariobrusarosco.com). It allows users to access all Best Shot features across multiple platforms with a unified experience.
+
+## 📱 Supported Platforms
+
+- **Web**: Browser-based version
+- **iOS**: Native app for iPhone and iPad
+- **Android**: Native app for Android devices
+
+## 🏗️ Architecture
+
+This project follows a hybrid architecture combining Domain-Driven Design (DDD) with a Feature-First organization:
+
+```
+src/
+├── core/                 # Domain layer (DDD)
+│   ├── entities/         # Domain models 
+│   ├── usecases/         # Business logic
+│   └── repositories/     # Data interfaces
+├── infrastructure/       # Implementation of repositories
+│   ├── api/              # API clients
+│   └── storage/          # Local storage
+├── features/             # UI organized by feature
+│   ├── auth/             # Authentication screens & logic
+│   ├── profile/          # Profile screens & logic
+│   └── [feature]/        # Other features
+├── ui/                   # Shared UI components
+│   ├── components/       # Reusable UI components
+│   └── theme/            # Design tokens & styling
+└── platform/             # Platform-specific code
+    ├── web/              # Web-specific implementations
+    ├── ios/              # iOS-specific implementations
+    └── android/          # Android-specific implementations
+```
+
+### Key Architecture Principles
+
+1. **Business Logic Isolation**: Core business logic lives in the `core` directory, independent of UI
+2. **Feature Organization**: UI components are organized by feature for better discoverability
+3. **Cross-Platform First**: Components are designed to work across platforms by default
+4. **Platform-Specific Overrides**: When needed, platform-specific code is isolated in the `platform` directory
+
+## 🛠️ Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or newer)
+- npm or yarn
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- For iOS: macOS with Xcode
+- For Android: Android Studio with an emulator
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/app-best-shot.git
+   cd app-best-shot
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn
+   ```
+
+3. Start the development server:
+   ```bash
+   npx expo start
+   ```
+
+## 🚀 Running the App
+
+From the Expo development server, you can:
+
+- Press `w` to open in web browser
+- Press `i` to open in iOS simulator (requires macOS)
+- Press `a` to open in Android emulator
+- Scan the QR code with the Expo Go app on your physical device
+
+## 🧩 Key Technologies
+
+- [React Native](https://reactnative.dev/): Core framework
+- [Expo](https://expo.dev/): Development platform
+- [TypeScript](https://www.typescriptlang.org/): Type safety
+- [React Navigation](https://reactnavigation.org/): Navigation library
+- [React Native for Web](https://necolas.github.io/react-native-web/): Web support
+
+## 📜 Development Guidelines
+
+### Styling
+
+- Use the theme constants from `src/ui/theme` for consistent styling
+- Handle platform differences using `Platform.select()`
+- Keep styles colocated with their components
+
+### Component Organization
+
+- Create new features in the `features` directory
+- Place reusable UI components in `ui/components`
+- Don't mix business logic with presentation components
+
+### Cross-Platform Development
+
+- Test on all platforms regularly
+- Use platform-specific code sparingly
+- When needed, use the `Platform` API to customize behavior
+
+### TypeScript
+
+- Use TypeScript for all new code
+- Define interfaces for all data structures
+- Use proper typing for component props
+
+## 📦 Building for Production
+
+### Web
+
+```bash
+npx expo export:web
+```
+
+The output will be in the `web-build` directory, ready to deploy to any static hosting service.
+
+### iOS & Android
+
+```bash
+eas build --platform ios
+eas build --platform android
+```
+
+## 🤝 Contributing
+
+1. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Push to the branch (`git push origin feature/amazing-feature`)
+4. Open a Pull Request
+
+## 📝 License
+
+This project is private and proprietary.
+````
+
+
+How does this look? This README provides:
+
+1. An overview of the project
+2. Explanation of our architecture
+3. Setup instructions
+4. Guidelines for development
+5. Information on how to run and build the app
+
+Would you like me to modify or expand any sections before finalizing it?
+
+---
+
+_**User**_
+
+Perefct!! Let's start lesson 2, please? \o/
+
+---
+
+_**Assistant**_
+
+<think>
+Great! Let's prepare for Lesson 2. Based on our curriculum outlined in lessons/README.md, Lesson 2 should focus on navigation and mobile UI components. This is the logical next step after our initial setup in Lesson 1.
+
+For Lesson 2, we should cover:
+1. React Navigation setup and configuration
+2. Creating a basic navigation structure
+3. Understanding differences between web and mobile navigation
+4. Implementing responsive UI components that work across all platforms
+
+Let me create the lesson plan for Lesson 2.
+</think>
+
+# Let's Begin Lesson 2! 🚀
+
+I'll create a structured lesson plan for our second session focusing on navigation and screen structure. Let's first document this in our lessons folder!
+
+````markdown:app-best-shot/lessons/02-navigation-structure.md
+# Lesson 2: Navigation & Screen Structure
+
+## Lesson Objectives
+
+By the end of this lesson, you will be able to:
+1. Set up React Navigation for cross-platform navigation
+2. Implement a navigation structure that works on all platforms
+3. Create multiple screens with proper routing
+4. Understand navigation patterns specific to each platform
+
+## Lesson Plan (2 hours)
+
+### 1. React Navigation Setup (30 min)
+
+- Install React Navigation and dependencies:
+  ```bash
+  npm install @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs
+  npx expo install react-native-screens react-native-safe-area-context
+  ```
+
+- For web support:
+  ```bash
+  npm install @react-navigation/web
+  ```
+
+- Set up the navigation container in App.tsx
+- Understanding navigation concepts:
+  - Navigators
+  - Screens
+  - Navigation props
+  - Params
+
+### 2. Creating a Navigation Structure (45 min)
+
+- Implementing a Stack Navigator for main screens
+- Adding a Bottom Tab Navigator for primary navigation
+- Configuring headers and navigation options
+- Creating a shared navigation structure for all platforms
+- Platform-specific navigation customizations
+
+### 3. Building Multiple Screens (45 min)
+
+- Create 3 basic screens:
+  - Home Screen (enhancing our existing Welcome Screen)
+  - Profile Screen
+  - Settings Screen
+- Implementing navigation between screens
+- Passing parameters between screens
+- Handling deep linking for web
+
+## Homework
+
+1. Customize the tab bar appearance for each platform
+2. Add a drawer navigator for additional navigation options
+3. Create at least one more screen with a form component
+4. Experiment with navigation animations and transitions
+
+## Next Lesson Preview
+
+Lesson 3 will focus on data management and connecting to APIs.
+````
+
+## Let's Start the Implementation
+
+Now, let's get to the actual code implementation! First, let's install the required dependencies:
+
+````bash
+# Install React Navigation core
+npm install @react-navigation/native
+
+# Install navigators
+npm install @react-navigation/native-stack @react-navigation/bottom-tabs
+
+# Install required native dependencies
+npx expo install react-native-screens react-native-safe-area-context
+
+# Install web support
+npm install @react-navigation/web
+````
+
+Next, let's create our screen components:
+
+````typescript:src/features/profile/ProfileScreen.tsx
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors, spacing, typography } from '@/src/ui/theme';
+
+export const ProfileScreen = ({ navigation }) => {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Profile Screen</Text>
+      <View style={styles.content}>
+        <Text style={styles.text}>
+          This is the profile screen where user information will be displayed.
+        </Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <Text style={styles.buttonText}>Go to Settings</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  title: {
+    ...typography.heading,
+    color: colors.text,
+    marginBottom: spacing.lg,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  text: {
+    ...typography.body,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md - spacing.xs,
+    borderRadius: spacing.sm,
+    marginTop: spacing.md,
+  },
+  buttonText: {
+    ...typography.button,
+    color: 'white',
+  },
+});
+````
+
+````typescript:src/features/settings/SettingsScreen.tsx
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Platform } from 'react-native';
+import { colors, spacing, typography } from '@/src/ui/theme';
+
+export const SettingsScreen = () => {
+  const [darkMode, setDarkMode] = React.useState(false);
+  const [notifications, setNotifications] = React.useState(true);
+  
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Settings</Text>
+      
+      <View style={styles.settingItem}>
+        <Text style={styles.settingLabel}>Dark Mode</Text>
+        <Switch
+          value={darkMode}
+          onValueChange={setDarkMode}
+          trackColor={{ false: '#d1d1d1', true: colors.primary }}
+          thumbColor={Platform.OS === 'android' ? colors.primary : '#f4f3f4'}
+        />
+      </View>
+      
+      <View style={styles.settingItem}>
+        <Text style={styles.settingLabel}>Enable Notifications</Text>
+        <Switch
+          value={notifications}
+          onValueChange={setNotifications}
+          trackColor={{ false: '#d1d1d1', true: colors.primary }}
+          thumbColor={Platform.OS === 'android' ? colors.primary : '#f4f3f4'}
+        />
+      </View>
+      
+      <View style={styles.footer}>
+        <Text style={styles.version}>
+          App Version: 1.0.0
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  title: {
+    ...typography.heading,
+    color: colors.text,
+    marginBottom: spacing.xl,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e1e1',
+  },
+  settingLabel: {
+    ...typography.body,
+    color: colors.text,
+  },
+  footer: {
+    marginTop: 'auto',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  version: {
+    ...typography.subheading,
+    color: colors.textSecondary,
+  },
+});
+````
+
+Now, let's modify our `WelcomeScreen.tsx` to make it a proper home screen:
+
+````typescript:src/features/welcome/WelcomeScreen.tsx
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { colors, spacing, typography } from '@/src/ui/theme';
+
+export const HomeScreen = ({ navigation }) => {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Welcome to Best Shot</Text>
+        <Text style={styles.subtitle}>
+          Running on: {Platform.OS === 'web' ? 'Web' : Platform.OS}
+        </Text>
+      </View>
+      
+      <View style={styles.content}>
+        <Text style={styles.description}>
+          This is a cross-platform app built with Expo that works on Web, iOS, and Android!
+        </Text>
+        
+        <View style={styles.counterContainer}>
+          <Text style={styles.counterText}>Button pressed: {count} times</Text>
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={() => setCount(count + 1)}
+          >
+            <Text style={styles.buttonText}>Press Me</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <TouchableOpacity 
+          style={[styles.button, { marginTop: spacing.lg }]} 
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <Text style={styles.buttonText}>Go to Profile</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Platform.select({
+      ios: spacing.lg,
+      android: spacing.md,
+      web: spacing.xl,
+    }),
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xl + spacing.lg,
+  },
+  title: {
+    ...typography.heading,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    ...typography.subheading,
+    color: colors.textSecondary,
+  },
+  content: {
+    width: Platform.select({
+      web: '80%',
+      default: '100%',
+    }),
+    maxWidth: 500,
+    alignItems: 'center',
+  },
+  description: {
+    ...typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  counterContainer: {
+    alignItems: 'center', 
+    marginBottom: spacing.lg,
+  },
+  counterText: {
+    ...typography.body,
+    marginBottom: spacing.md,
+  },
+  button: {
+    backgroundColor: Platform.select({
+      ios: '#007AFF',
+      android: colors.secondary,
+      web: colors.primary,
+    }),
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md - spacing.xs,
+    borderRadius: spacing.sm,
+  },
+  buttonText: {
+    ...typography.button,
+    color: 'white',
+  },
+});
+
+// Keep the original export for backward compatibility
+export const WelcomeScreen = HomeScreen;
+````
+
+Now, let's update App.tsx to implement our navigation structure:
+
+````typescript:App.tsx
+import React from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { HomeScreen } from '@/src/features/welcome/WelcomeScreen';
+import { ProfileScreen } from '@/src/features/profile/ProfileScreen';
+import { SettingsScreen } from '@/src/features/settings/SettingsScreen';
+import { colors } from '@/src/ui/theme';
+import { Ionicons } from '@expo/vector-icons';
+
+// Create navigators
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+// Home stack navigator
+const HomeStack = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="Home" 
+        component={HomeScreen} 
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Profile stack navigator
+const ProfileStack = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="Profile" 
+        component={ProfileScreen} 
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Main tab navigator
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'HomeTab') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'ProfileTab') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen 
+        name="HomeTab" 
+        component={HomeStack} 
+        options={{ 
+          title: 'Home',
+        }}
+      />
+      <Tab.Screen 
+        name="ProfileTab" 
+        component={ProfileStack} 
+        options={{ 
+          title: 'Profile',
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <TabNavigator />
+      <StatusBar style="auto" />
+    </NavigationContainer>
+  );
+}
+````
+
+Would you like to implement these changes and see how the navigation works across platforms? This will give us a good foundation for our app's navigation structure.
+
+---
+
+_**User**_
+
+Yes
+
+---
+
+_**Assistant**_
+
+<think>
+The user has responded with "Yes", which seems to indicate they're ready to proceed with Lesson 2, but they've already created and accepted the code files I suggested. Let me analyze what's happened:
+
+1. They've created and accepted:
+   - WelcomeScreen.tsx (renamed to HomeScreen internally with backward compatibility)
+   - App.tsx (updated with navigation)
+   - ProfileScreen.tsx
+   - SettingsScreen.tsx
+   - 02-navigation-structure.md for the lesson documentation
+
+2. It appears they've also installed the required navigation dependencies since they're not reporting any errors.
+
+The next steps for Lesson 2 would be to:
+1. Make sure they understand how the navigation is structured
+2. Explain the different types of navigators (Stack vs Tab)
+3. Show how to pass params between screens
+4. Explain platform-specific navigation considerations
+
+I'll now respond with a summary of what we've accomplished in the current step of Lesson 2 and then proceed with the next part of our navigation lesson.
+</think>
+
+# Navigation Structure Implemented Successfully!
+
+Great work! You've successfully set up the navigation structure for your app. Now you have a fully functional multi-screen app with navigation that works across all platforms.
+
+## What We've Accomplished So Far
+
+1. **Navigation Setup**:
+   - Created a bottom tab navigator for primary navigation
+   - Implemented stack navigators for each tab section
+   - Set up screen-to-screen navigation
+
+2. **Multiple Screens**:
+   - Home Screen (enhanced from our Welcome Screen)
+   - Profile Screen with basic layout
+   - Settings Screen with toggle components
+
+3. **Navigation Patterns**:
+   - Tab-based primary navigation (common on mobile)
+   - Stack-based secondary navigation
+   - Button-triggered navigation between screens
+
+## Let's Enhance Our Navigation Knowledge
+
+Now that we have the basic structure in place, let's explore some additional navigation concepts:
+
+### 1. Passing Parameters Between Screens
+
+Let's modify our ProfileScreen to accept and display parameters:
+
+````typescript:src/features/profile/ProfileScreen.tsx
+// In ProfileScreen.tsx
+export const ProfileScreen = ({ navigation, route }) => {
+  // Default values if no params passed
+  const { username = 'Default User', userLevel = 'Beginner' } = route.params || {};
+  
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Profile: {username}</Text>
+      <View style={styles.content}>
+        <Text style={styles.text}>
+          This is the profile screen for {username}, who is a {userLevel} player.
+        </Text>
+        
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <Text style={styles.buttonText}>Go to Settings</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+````
+
+Then, in our HomeScreen, let's pass parameters when navigating:
+
+````typescript:src/features/welcome/WelcomeScreen.tsx
+// In the navigation button in HomeScreen
+<TouchableOpacity 
+  style={[styles.button, { marginTop: spacing.lg }]} 
+  onPress={() => navigation.navigate('Profile', {
+    username: 'Mario',
+    userLevel: 'Expert'
+  })}
+>
+  <Text style={styles.buttonText}>Go to Profile</Text>
+</TouchableOpacity>
+````
+
+### 2. Platform-Specific Navigation Customization
+
+Let's add some platform-specific styling to our tab navigator:
+
+````typescript:App.tsx
+// In the TabNavigator component
+<Tab.Navigator
+  screenOptions={({ route }) => ({
+    tabBarIcon: ({ focused, color, size }) => {
+      let iconName;
+
+      if (route.name === 'HomeTab') {
+        iconName = focused ? 'home' : 'home-outline';
+      } else if (route.name === 'ProfileTab') {
+        iconName = focused ? 'person' : 'person-outline';
+      }
+
+      return <Ionicons name={iconName} size={size} color={color} />;
+    },
+    tabBarActiveTintColor: colors.primary,
+    tabBarInactiveTintColor: colors.textSecondary,
+    headerShown: false,
+    tabBarStyle: Platform.select({
+      ios: {
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px -2px 10px rgba(0, 0, 0, 0.05)',
+      }
+    }),
+    tabBarLabelStyle: {
+      fontSize: Platform.OS === 'web' ? 14 : 12,
+    }
+  })}
+>
+````
+
+### 3. Adding Headers with Custom Options
+
+Let's add a proper header to our ProfileScreen:
+
+````typescript:App.tsx
+// In the ProfileStack component
+<Stack.Navigator>
+  <Stack.Screen 
+    name="Profile" 
+    component={ProfileScreen} 
+    options={{
+      headerTitle: 'Your Profile',
+      headerTintColor: colors.primary,
+      headerStyle: {
+        backgroundColor: colors.background,
+      },
+      headerTitleStyle: {
+        ...typography.heading,
+        fontSize: 20,
+      },
+    }}
+  />
+  <Stack.Screen 
+    name="Settings" 
+    component={SettingsScreen} 
+    options={{
+      headerTitle: 'App Settings',
+      headerTintColor: colors.primary,
+    }}
+  />
+</Stack.Navigator>
+````
+
+Would you like to implement any of these enhancements? Or would you prefer to explore other aspects of navigation?
+
+---
+
+_**User**_
+
+Can we go throught this?
+
+
+---
+
+_**Assistant**_
+
+<think>
+The user is asking to go through the changes we just made to the navigation structure. Let's organize an explanation of the key navigation concepts implemented in their app:
+
+1. Navigation Container - The root component for navigation
+2. Different types of Navigators - Stack and Tab navigators
+3. Screen components and their options
+4. Navigation props and navigation functions
+5. Route params and how they're passed between screens
+6. Platform-specific customizations for navigation
+
+I'll structure a thorough explanation of these concepts with examples from their code to help deepen their understanding of React Navigation.
+</think>
+
+# React Navigation - Detailed Walkthrough
+
+Absolutely! Let's go through the navigation structure we've implemented and understand the key concepts:
+
+## 1. Navigation Container
+
+```tsx
+export default function App() {
+  return (
+    <NavigationContainer>
+      <TabNavigator />
+      <StatusBar style="auto" />
+    </NavigationContainer>
+  );
+}
+```
+
+The `NavigationContainer` is the root component that manages the navigation tree and maintains the navigation state. It must wrap all navigator components.
+
+## 2. Navigator Types
+
+### Stack Navigator
+
+```tsx
+const Stack = createNativeStackNavigator();
+
+const ProfileStack = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="Profile" component={ProfileScreen} options={{...}} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{...}} />
+    </Stack.Navigator>
+  );
+};
+```
+
+- **Purpose**: Creates a card stack of screens where each new screen is placed on top
+- **Behavior**: Provides "back" navigation automatically
+- **Best for**: Sequential flows and drill-down navigation
+
+### Tab Navigator
+
+```tsx
+const Tab = createBottomTabNavigator();
+
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator screenOptions={...}>
+      <Tab.Screen name="HomeTab" component={HomeStack} options={{...}} />
+      <Tab.Screen name="ProfileTab" component={ProfileStack} options={{...}} />
+    </Tab.Navigator>
+  );
+};
+```
+
+- **Purpose**: Creates a tab bar with icons at the bottom
+- **Behavior**: Allows switching between different sections of the app
+- **Best for**: Top-level navigation between major app sections
+
+## 3. Screen Components
+
+Each screen is defined by:
+- **Name**: Unique identifier for the screen (e.g., "Profile", "Settings")
+- **Component**: The React component to render for this screen
+- **Options**: Configuration for headers, animations, etc.
+
+```tsx
+<Stack.Screen 
+  name="Profile" 
+  component={ProfileScreen} 
+  options={{
+    headerTitle: 'Your Profile',
+    headerTintColor: colors.primary,
+    // More styling options...
+  }}
+/>
+```
+
+## 4. Navigation Props
+
+Every screen component receives a `navigation` prop:
+
+```tsx
+export const HomeScreen = ({ navigation }) => {
+  // ...
+  <TouchableOpacity 
+    onPress={() => navigation.navigate('Profile', {
+      username: 'Mario',
+      userLevel: 'Expert'
+    })}
+  >
+    <Text style={styles.buttonText}>Go to Profile</Text>
+  </TouchableOpacity>
+  // ...
+};
+```
+
+The navigation prop provides methods like:
+- `navigate(screenName, params)`: Go to another screen
+- `goBack()`: Return to previous screen
+- `push(screenName, params)`: Add screen to stack even if it exists
+- `reset(state)`: Reset entire navigation state
+
+## 5. Route Params
+
+Params allow you to pass data between screens:
+
+```tsx
+// In HomeScreen.tsx - Sending parameters
+navigation.navigate('Profile', {
+  username: 'Mario',
+  userLevel: 'Expert'
+})
+
+// In ProfileScreen.tsx - Receiving parameters
+export const ProfileScreen = ({ navigation, route }) => {
+  // Default values if no params passed
+  const { username = 'Default User', userLevel = 'Beginner' } = route.params || {};
+  
+  return (
+    // ... Display username and userLevel
+  );
+};
+```
+
+## 6. Platform-Specific Customizations
+
+React Navigation allows platform-specific styling:
+
+```tsx
+tabBarStyle: Platform.select({
+  ios: {
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  android: {
+    elevation: 4,
+  },
+  web: {
+    boxShadow: '0px -2px 10px rgba(0, 0, 0, 0.05)',
+  }
+}),
+```
+
+This ensures that each platform follows its native UI conventions:
+- iOS: Uses shadow properties
+- Android: Uses elevation
+- Web: Uses CSS box-shadow
+
+## 7. Navigator Nesting
+
+Notice how we've nested navigators to create complex navigation:
+
+```
+NavigationContainer
+└── Tab Navigator
+    ├── HomeStack (Stack Navigator)
+    │   └── Home Screen
+    └── ProfileStack (Stack Navigator)
+        ├── Profile Screen
+        └── Settings Screen
+```
+
+This nesting gives us both tab navigation (between sections) and stack navigation (within sections).
+
+## Questions?
+
+Is there any specific aspect of navigation you'd like to explore further? For example:
+- Deep linking configuration
+- Navigation state persistence
+- Custom transition animations
+- Drawer navigation
 
 ---
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { colors, spacing, typography } from '@/src/ui/theme';
 
-export const WelcomeScreen = () => {
+export const HomeScreen = ({ navigation }) => {
   const [count, setCount] = useState(0);
   
   return (
@@ -28,6 +28,16 @@ export const WelcomeScreen = () => {
             <Text style={styles.buttonText}>Press Me</Text>
           </TouchableOpacity>
         </View>
+        
+        <TouchableOpacity 
+          style={[styles.button, { marginTop: spacing.lg }]} 
+          onPress={() => navigation.navigate('Profile', {
+            username: 'Mario',
+            userLevel: 'Expert'
+          })}
+        >
+          <Text style={styles.buttonText}>Go to Profile</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -59,7 +69,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   content: {
-    width: Platform.OS === 'web' ? '80%' : '100%',
+    width: Platform.select({
+      web: '80%',
+      default: '100%',
+    }),
     maxWidth: 500,
     alignItems: 'center',
   },
@@ -70,6 +83,7 @@ const styles = StyleSheet.create({
   },
   counterContainer: {
     alignItems: 'center', 
+    marginBottom: spacing.lg,
   },
   counterText: {
     ...typography.body,
@@ -89,4 +103,7 @@ const styles = StyleSheet.create({
     ...typography.button,
     color: 'white',
   },
-}); 
+});
+
+// Keep the original export for backward compatibility
+export const WelcomeScreen = HomeScreen; 
