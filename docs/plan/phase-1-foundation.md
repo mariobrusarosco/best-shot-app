@@ -4,31 +4,32 @@
 
 ## Tasks
 
-1.  **[ ] Initialize Expo Project**
+1.  **[X] Initialize Expo Project**
 
-    - [ ] Create a new Expo (SDK latest stable version) project with TypeScript.
-    - [ ] Choose a suitable template (e.g., blank with tabs, or a minimal template).
-    - [ ] Verify project runs on Web, iOS simulator, and Android emulator.
+    - [X] Create a new Expo (SDK latest stable version) project with TypeScript.
+    - [X] Choose a suitable template (e.g., blank with tabs, or a minimal template).
+    - [X] Verify project runs on Web, iOS simulator, and Android emulator.
 
-2.  **[ ] Setup Directory Structure**
+2.  **[X] Setup Directory Structure**
 
-    - [ ] Create `docs/` directory.
-      - [ ] Create `docs/decisions/` (ADRs will go here - `001-technology-stack.md` already created).
-      - [ ] Create `docs/guides/` (Developer guides will go here).
-      - [ ] Create `docs/plan/` (Phase plans will go here - this file `phase-1-foundation.md` is the first).
-      - [ ] Create `docs/fixing-log/` (Issue resolution logs will go here).
-    - [ ] Define a scalable `src/` directory structure:
-      - `src/components/` (shared UI components)
-      - `src/screens/` (top-level screen components)
-      - `src/navigation/` (navigation setup, stacks, navigators)
-      - `src/services/` (API interaction, other external services)
-      - `src/hooks/` (custom React hooks)
-      - `src/store/` (state management setup - e.g., TanStack Query providers, Zustand stores if used)
-      - `src/types/` (shared TypeScript types and interfaces, especially for API data)
-      - `src/assets/` (images, fonts, etc.)
-      - `src/constants/` (application-wide constants)
-      - `src/utils/` (utility functions)
+    - [X] Create `docs/` directory.
+      - [X] Create `docs/decisions/` (ADRs will go here - `001-technology-stack.md` already created).
+      - [X] Create `docs/guides/` (Developer guides will go here).
+      - [X] Create `docs/plan/` (Phase plans will go here - this file `phase-1-foundation.md` is the first).
+      - [X] Create `docs/fixing-log/` (Issue resolution logs will go here).
+    - [X] Define a scalable `src/` directory structure:
+      - `src/app/` (Expo Router: screen components, layouts, and route definitions)
+      - `src/assets/` (images, fonts, etc. - moved from root)
+      - `src/components/` (shared, global UI components - moved from root)
+      - `src/constants/` (application-wide constants, themes - moved from root)
       - `src/config/` (environment configurations, API base URLs etc.)
+      - `src/domains/` (feature-specific modules, each potentially containing its own components, hooks, services, types, utils, store slices)
+      - `src/hooks/` (shared, global custom React hooks)
+      - `src/services/` (shared, global API interaction, other external services)
+      - `src/store/` (shared, global state management setup - e.g., TanStack Query providers, Zustand stores if used)
+      - `src/types/` (shared, global TypeScript types and interfaces)
+      - `src/utils/` (shared, global utility functions)
+      - `src/navigation/` (Optional: for navigation helper functions or complex configurations beyond Expo Router's file-based setup)
 
 3.  **[ ] Install Core Dependencies**
 
