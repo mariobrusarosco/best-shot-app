@@ -31,38 +31,37 @@
       - `src/utils/` (shared, global utility functions)
       - `src/navigation/` (Optional: for navigation helper functions or complex configurations beyond Expo Router's file-based setup)
 
-3.  **[ ] Install Core Dependencies**
+3.  **[X] Install Core Dependencies**
 
-    - [ ] `react-navigation` (for navigation - `@react-navigation/native`, `@react-navigation/stack`, `@react-navigation/bottom-tabs` etc. as needed).
-    - [ ] `expo-router` (Consider for file-system based routing if preferred over React Navigation's declarative approach, especially good for web-like routing).
-      - _Decision Point_: We need to decide if `expo-router` is a better fit than `react-navigation` or if they can be used complementarily. For a start, `react-navigation` is more established for mobile-first, but `expo-router` is gaining traction for universal apps.
-    - [ ] `tanstack/react-query` (for API data fetching and caching).
-    - [ ] `axios` (or `fetch` API) for HTTP requests.
-    - [ ] Consider a UI component library (e.g., `react-native-paper`, `tamagui`, or `nativewind` for TailwindCSS-like styling) - _Decision Point_: To be discussed and decided in an ADR if we opt for a full library beyond basic `StyleSheet`.
+    - [X] `react-navigation` (for navigation - `@react-navigation/native`, `@react-navigation/stack`, `@react-navigation/bottom-tabs` etc. as needed). - _Note: `@react-navigation/native` is present. `expo-router` handles stack/tabs._
+    - [X] `expo-router` (Consider for file-system based routing if preferred over React Navigation's declarative approach, especially good for web-like routing). - _Note: Already installed and configured as main entry._
+    - [X] `tanstack/react-query` (for API data fetching and caching).
+    - [X] `axios` (or `fetch` API) for HTTP requests.
+    - [X] UI Component Library: `tamagui` (with `@tamagui/config`, `@tamagui/babel-plugin`, `@tamagui/font-inter`).
 
-4.  **[ ] Setup Basic Navigation**
+4.  **[X] Setup Basic Navigation**
 
-    - [ ] Implement a basic tab navigator or stack navigator (e.g., Home, Profile, Settings placeholders).
-    - [ ] Ensure navigation works on all three platforms.
+    - [X] Implement a basic tab navigator (Home, Explore, Profile) using `expo-router`.
+    - [ ] Ensure navigation works on all three platforms. (_Note: Basic structure created, platform testing pending by developer_)
 
-5.  **[ ] Environment Configuration**
+5.  **[X] Environment Configuration**
 
-    - [ ] Set up a way to manage environment variables (e.g., API base URL) using `expo-constants` or a `.env` file approach compatible with Expo.
+    - [X] Set up a way to manage environment variables (e.g., API base URL) using `expo-constants` and `app.json` `extra` field. (Placeholders added).
 
-6.  **[ ] Linting and Formatting**
+6.  **[X] Linting and Formatting**
 
-    - [ ] Configure ESLint and Prettier for consistent code style.
-    - [ ] Add script to `package.json` for linting and formatting.
+    - [X] Configure ESLint and Prettier for consistent code style.
+    - [X] Add script to `package.json` for linting and formatting.
 
-7.  **[ ] Initial `README.md` Update**
+7.  **[X] Initial `README.md` Update**
 
-    - [ ] Update the root `README.md` to include:
+    - [X] Update the root `README.md` to include:
       - Project overview.
       - Instructions on how to get started (install dependencies, run the project on different platforms).
       - Links to `docs/decisions/`, `docs/guides/`, and `docs/plan/`.
 
-8.  **[ ] Basic API Service Setup**
-    - [ ] Create a basic API service module in `src/services/api.ts` (e.g., using Axios instance with base URL).
-    - [ ] Define a simple type for a common API response or a placeholder endpoint in `src/types/api.ts`.
+8.  **[X] Basic API Service Setup**
+    - [X] Create a basic API service module in `src/services/api.ts` (e.g., using Axios instance with base URL).
+    - [X] Define a simple type for a common API response or a placeholder endpoint in `src/types/api.ts`.
 
 **Completion Criteria for Phase 1**: All tasks above are checked. The project has a basic runnable skeleton with navigation, foundational tooling, and clear documentation structure. The development environment is stable and consistent for all team members.
