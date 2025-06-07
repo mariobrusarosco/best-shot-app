@@ -7,7 +7,14 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": []
+		"ignore": [
+			".tamagui/**",
+			"node_modules/**",
+			".expo/**",
+			"dist/**",
+			"build/**"
+		],
+		"maxSize": 10485760
 	},
 	"formatter": {
 		"enabled": true,
