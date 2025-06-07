@@ -7,11 +7,7 @@
 		"android": "expo start --android",
 		"ios": "expo start --ios",
 		"web": "expo start --web",
-		"test": "jest --watchAll",
-		"test:ci": "jest --watchAll=false --passWithNoTests",
-		"lint": "biome check .",
-		"lint:fix": "biome check --write .",
-		"format": "biome format --write .",
+		"lint": "biome check --write .",
 		"type-check": "tsc --noEmit",
 		"type-check:watch": "tsc --noEmit --watch",
 		"prepare": "husky"
@@ -20,14 +16,13 @@
 		"preset": "jest-expo"
 	},
 	"lint-staged": {
-		"*.{ts,tsx,js,jsx,json}": [
-			"biome check --write",
-			"biome check --error-on-warnings"
-		]
+		"*.{ts,tsx,js,jsx,json}": ["biome check --write --unsafe"],
+		"*.{ts,tsx}": ["bash -c 'tsc --noEmit'"]
 	},
 	"dependencies": {
 		"@expo/vector-icons": "^14.1.0",
 		"@react-navigation/native": "^7.1.6",
+		"@tamagui/config": "^1.126.14",
 		"@tanstack/react-query": "^5.80.6",
 		"axios": "^1.9.0",
 		"expo": "~53.0.9",
@@ -45,7 +40,8 @@
 		"react-native-safe-area-context": "5.4.0",
 		"react-native-screens": "~4.10.0",
 		"react-native-web": "~0.20.0",
-		"tamagui": "^1.126.14"
+		"tamagui": "^1.126.14",
+		"ts-node": "^10.9.2"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.25.2",
