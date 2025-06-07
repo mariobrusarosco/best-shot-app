@@ -48,10 +48,10 @@
 
     - [x] Set up a way to manage environment variables (e.g., API base URL) using `expo-constants` or a `.env` file approach compatible with Expo.
 
-6.  **[ ] Linting and Formatting**
+6.  **[x] Linting and Formatting**
 
-    - [ ] Configure ESLint and Prettier for consistent code style.
-    - [ ] Add script to `package.json` for linting and formatting.
+    - [x] ~~Configure ESLint and Prettier for consistent code style.~~ **Decision: Adopted Biome.js instead (see ADR 004)**
+    - [x] Add script to `package.json` for linting and formatting.
 
 7.  **[x] Initial `README.md` Update**
 
