@@ -2434,24 +2434,990 @@ yarn web
 ### Next Phase
 Proceed to **Phase 6 - Authentication (Clerk or Custom)**
 
-## Phase 6 - Authentication (Clerk or Convex Auth)
-To be defined
+## Phase 6 - Authentication
+
+### Overview
+Implement authentication with secure token storage, auth state management, and protected routes. Two approaches available: **Clerk** (managed service) or **Custom Auth** (using your existing API).
+
+### Decision: Choose Your Auth Approach
+
+#### **Option A: Clerk** (Recommended by Nathan)
+- ✅ Managed authentication service
+- ✅ Pre-built UI components
+- ✅ Social logins (Google, Apple, etc.)
+- ✅ Easy setup, minimal code
+- ⚠️ Additional service dependency
+- ⚠️ Costs after free tier (10,000 MAU free)
+
+#### **Option B: Auth0** (Alternative Managed Service)
+- ✅ Established auth platform (industry standard)
+- ✅ Social logins (Google, Apple, GitHub, etc.)
+- ✅ More flexible than Clerk
+- ✅ Works with your existing API
+- ✅ Generous free tier (7,000 MAU free)
+- ⚠️ Slightly more configuration than Clerk
+- ⚠️ Additional service dependency
+
+**Recommendation:** Use **Clerk** for easiest setup, or **Auth0** for more flexibility and wider feature set.
+
+---
+
+## OPTION A: Clerk Implementation
+
+### A.1 Install Clerk Dependencies
+
+```bash
+npx expo install @clerk/clerk-expo expo-secure-store
+```
+
+### A.2 Get Clerk API Keys
+
+1. Sign up at https://clerk.com
+2. Create a new application
+3. Get your publishable key from the dashboard
+4. Add to `.env.local`:
+
+```bash
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
+```
+
+Update `src/config/env.ts`:
+
+```typescript
+export const env = {
+  apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api-best-shot-staging.mariobrusarosco.com',
+  clerkPublishableKey: process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  isDev: process.env.NODE_ENV === 'development',
+  isProd: process.env.NODE_ENV === 'production',
+} as const;
+
+if (!env.clerkPublishableKey) {
+  throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY');
+}
+```
+
+### A.3 Configure Clerk Provider
+
+Update `src/app/_layout.tsx`:
+
+```typescript
+import { Stack } from 'expo-router';
+import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+import { tokenCache } from '@/services/auth/token-cache';
+import { env } from '@/config/env';
+
+export default function RootLayout() {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+            retry: 1,
+          },
+        },
+      })
+  );
+
+  return (
+    <ClerkProvider
+      publishableKey={env.clerkPublishableKey!}
+      tokenCache={tokenCache}
+    >
+      <ClerkLoaded>
+        <QueryClientProvider client={queryClient}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: 'white' },
+            }}
+          />
+        </QueryClientProvider>
+      </ClerkLoaded>
+    </ClerkProvider>
+  );
+}
+```
+
+### A.4 Create Token Cache
+
+Create `src/services/auth/token-cache.ts`:
+
+```typescript
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
+/**
+ * Secure token cache for Clerk
+ */
+export const tokenCache = {
+  async getToken(key: string) {
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch (error) {
+      console.error('SecureStore get error:', error);
+      return null;
+    }
+  },
+  async saveToken(key: string, value: string) {
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch (error) {
+      console.error('SecureStore set error:', error);
+    }
+  },
+};
+```
+
+### A.5 Update Sign In Screen with Clerk
+
+Update `src/app/(public)/sign-in.tsx`:
+
+```typescript
+import { useState } from 'react';
+import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSignIn } from '@clerk/clerk-expo';
+import { Button } from '@/components/ui/button';
+
+export default function SignInScreen() {
+  const router = useRouter();
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSignIn = async () => {
+    if (!isLoaded) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn.create({
+        identifier: email,
+        password,
+      });
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        router.replace('/(auth)/home');
+      }
+    } catch (err: any) {
+      setError(err.errors?.[0]?.message || 'Failed to sign in');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-white p-6">
+      <View className="flex-1 justify-center">
+        <Text className="text-3xl font-bold text-gray-900 mb-8">
+          Welcome Back
+        </Text>
+
+        {error && (
+          <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <Text className="text-red-600">{error}</Text>
+          </View>
+        )}
+
+        <View className="gap-4 mb-6">
+          <View>
+            <Text className="text-sm font-medium text-gray-700 mb-2">Email</Text>
+            <TextInput
+              className="border border-gray-300 rounded-lg px-4 py-3"
+              placeholder="your@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!isLoading}
+            />
+          </View>
+
+          <View>
+            <Text className="text-sm font-medium text-gray-700 mb-2">Password</Text>
+            <TextInput
+              className="border border-gray-300 rounded-lg px-4 py-3"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
+          </View>
+        </View>
+
+        <Button onPress={handleSignIn} disabled={isLoading}>
+          {isLoading ? 'Signing In...' : 'Sign In'}
+        </Button>
+
+        <Pressable
+          onPress={() => router.push('/(public)/sign-up')}
+          className="mt-4"
+          disabled={isLoading}
+        >
+          <Text className="text-center text-gray-600">
+            Don't have an account?{' '}
+            <Text className="text-primary-600 font-semibold">Sign Up</Text>
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+```
+
+### A.6 Protect Routes with Clerk
+
+Update `src/app/(auth)/_layout.tsx`:
+
+```typescript
+import { Redirect, Tabs } from 'expo-router';
+import { View, Text } from 'react-native';
+import { useAuth } from '@clerk/clerk-expo';
+
+export default function AuthLayout() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Show loading while checking auth
+  if (!isLoaded) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isSignedIn) {
+    return <Redirect href="/(public)/sign-in" />;
+  }
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: '#e5e7eb',
+        },
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#6b7280',
+      }}
+    >
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>🏠</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="matches"
+        options={{
+          title: 'Matches',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚽</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>👤</Text>,
+        }}
+      />
+    </Tabs>
+  );
+}
+```
+
+### A.7 Add Sign Out to Profile
+
+Update `src/app/(auth)/profile.tsx`:
+
+```typescript
+import { View, Text, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useUser, useAuth } from '@clerk/clerk-expo';
+import { Button } from '@/components/ui/button';
+import { FadeInView } from '@/components/animated/fade-in-view';
+
+export default function ProfileScreen() {
+  const router = useRouter();
+  const { user } = useUser();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/');
+  };
+
+  return (
+    <ScrollView className="flex-1 bg-gray-50">
+      <View className="p-6">
+        <FadeInView>
+          <Text className="text-3xl font-bold text-gray-900 mb-6">Profile 👤</Text>
+        </FadeInView>
+
+        <FadeInView delay={200}>
+          <View className="bg-white rounded-lg p-6 mb-4">
+            <Text className="text-lg font-semibold text-gray-900 mb-1">
+              {user?.fullName || 'User'}
+            </Text>
+            <Text className="text-gray-600">
+              {user?.emailAddresses[0]?.emailAddress}
+            </Text>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={600}>
+          <Button variant="outline" onPress={handleSignOut}>
+            Sign Out
+          </Button>
+        </FadeInView>
+      </View>
+    </ScrollView>
+  );
+}
+```
+
+---
+
+## OPTION B: Auth0 Implementation
+
+### B.1 Install Auth0 Dependencies
+
+```bash
+yarn add react-native-auth0
+npx expo install expo-web-browser expo-crypto
+```
+
+### B.2 Create Auth0 Application
+
+1. Sign up at https://auth0.com
+2. Create a new application → **Native App**
+3. Get your credentials:
+   - **Domain:** `your-tenant.us.auth0.com`
+   - **Client ID:** `your-client-id`
+
+4. Configure Allowed Callback URLs:
+   ```
+   exp://localhost:8081,
+   bestshot://auth,
+   com.bestshot.app://auth
+   ```
+
+5. Configure Allowed Logout URLs:
+   ```
+   exp://localhost:8081,
+   bestshot://auth,
+   com.bestshot.app://auth
+   ```
+
+### B.3 Configure Environment Variables
+
+Add to `.env.local`:
+
+```bash
+EXPO_PUBLIC_AUTH0_DOMAIN=your-tenant.us.auth0.com
+EXPO_PUBLIC_AUTH0_CLIENT_ID=your-client-id
+```
+
+Update `src/config/env.ts`:
+
+```typescript
+export const env = {
+  apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api-best-shot-staging.mariobrusarosco.com',
+
+  // Auth0 configuration
+  auth0Domain: process.env.EXPO_PUBLIC_AUTH0_DOMAIN,
+  auth0ClientId: process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID,
+
+  isDev: process.env.NODE_ENV === 'development',
+  isProd: process.env.NODE_ENV === 'production',
+} as const;
+
+if (!env.auth0Domain || !env.auth0ClientId) {
+  throw new Error('Missing Auth0 environment variables');
+}
+```
+
+### B.4 Create Auth0 Provider
+
+Create `src/services/auth/auth0-provider.tsx`:
+
+```typescript
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter, useSegments } from 'expo-router';
+import Auth0 from 'react-native-auth0';
+import { env } from '@/config/env';
+
+const auth0 = new Auth0({
+  domain: env.auth0Domain!,
+  clientId: env.auth0ClientId!,
+});
+
+interface Auth0User {
+  sub: string;
+  name?: string;
+  email?: string;
+  picture?: string;
+}
+
+interface AuthContextType {
+  user: Auth0User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  accessToken: string | null;
+  signIn: () => Promise<void>;
+  signUp: () => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function Auth0Provider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<Auth0User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const segments = useSegments();
+
+  // Check auth status on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  // Handle navigation based on auth state
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const inPublicGroup = segments[0] === '(public)';
+
+    if (!user && inAuthGroup) {
+      router.replace('/(public)/sign-in');
+    } else if (user && inPublicGroup) {
+      router.replace('/(auth)/home');
+    }
+  }, [user, segments, isLoading]);
+
+  const checkAuth = async () => {
+    try {
+      // Try to get user info from stored credentials
+      const credentials = await auth0.credentialsManager.getCredentials();
+      if (credentials?.accessToken) {
+        const userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
+        setUser(userInfo);
+        setAccessToken(credentials.accessToken);
+      }
+    } catch (error) {
+      console.log('No stored credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signIn = async () => {
+    try {
+      const credentials = await auth0.webAuth.authorize({
+        scope: 'openid profile email',
+      });
+
+      const userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
+      setUser(userInfo);
+      setAccessToken(credentials.accessToken);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  const signUp = async () => {
+    try {
+      const credentials = await auth0.webAuth.authorize({
+        scope: 'openid profile email',
+        // Add signup screen hint
+        additionalParameters: {
+          screen_hint: 'signup',
+        },
+      });
+
+      const userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
+      setUser(userInfo);
+      setAccessToken(credentials.accessToken);
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await auth0.webAuth.clearSession();
+      await auth0.credentialsManager.clearCredentials();
+      setUser(null);
+      setAccessToken(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        accessToken,
+        signIn,
+        signUp,
+        signOut,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth0 = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth0 must be used within Auth0Provider');
+  }
+  return context;
+};
+```
+
+### B.5 Update API Client with Auth0 Token
+
+Update `src/services/api/client.ts`:
+
+```typescript
+import axios from 'axios';
+import { env } from '@/config/env';
+import Auth0 from 'react-native-auth0';
+
+const auth0 = new Auth0({
+  domain: env.auth0Domain!,
+  clientId: env.auth0ClientId!,
+});
+
+export const apiClient = axios.create({
+  baseURL: env.apiUrl,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+/**
+ * Request interceptor - Add Auth0 token to requests
+ */
+apiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      const credentials = await auth0.credentialsManager.getCredentials();
+      if (credentials?.accessToken) {
+        config.headers.Authorization = `Bearer ${credentials.accessToken}`;
+      }
+    } catch (error) {
+      console.log('No Auth0 credentials available');
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+/**
+ * Response interceptor - Handle errors globally
+ */
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401) {
+      // Clear Auth0 credentials
+      await auth0.credentialsManager.clearCredentials();
+      console.warn('Unauthorized - cleared auth data');
+    }
+
+    // Handle 500 Server Error
+    if (error.response?.status >= 500) {
+      console.error('Server error:', error.response.data);
+    }
+
+    return Promise.reject(error);
+  }
+);
+```
+
+### B.6 Add Auth0Provider to Root Layout
+
+Update `src/app/_layout.tsx`:
+
+```typescript
+import { Stack } from 'expo-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Auth0Provider } from '@/services/auth/auth0-provider';
+
+export default function RootLayout() {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+            retry: 1,
+          },
+        },
+      })
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Auth0Provider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: 'white' },
+          }}
+        />
+      </Auth0Provider>
+    </QueryClientProvider>
+  );
+}
+```
+
+### B.7 Update Sign In Screen with Auth0
+
+Update `src/app/(public)/sign-in.tsx`:
+
+```typescript
+import { useState } from 'react';
+import { View, Text, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth0 } from '@/services/auth/auth0-provider';
+import { Button } from '@/components/ui/button';
+
+export default function SignInScreen() {
+  const router = useRouter();
+  const { signIn } = useAuth0();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSignIn = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await signIn();
+      // Auth0Provider will handle navigation
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-white p-6">
+      <View className="flex-1 justify-center">
+        <Text className="text-3xl font-bold text-gray-900 mb-2">
+          Welcome Back
+        </Text>
+        <Text className="text-lg text-gray-600 mb-8">
+          Sign in with Auth0
+        </Text>
+
+        {error && (
+          <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <Text className="text-red-600">{error}</Text>
+          </View>
+        )}
+
+        <Button onPress={handleSignIn} disabled={isLoading}>
+          {isLoading ? 'Signing In...' : 'Sign In with Auth0'}
+        </Button>
+
+        <Pressable
+          onPress={() => router.push('/(public)/sign-up')}
+          className="mt-4"
+          disabled={isLoading}
+        >
+          <Text className="text-center text-gray-600">
+            Don't have an account?{' '}
+            <Text className="text-primary-600 font-semibold">Sign Up</Text>
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+```
+
+### B.8 Update Sign Up Screen with Auth0
+
+Update `src/app/(public)/sign-up.tsx`:
+
+```typescript
+import { useState } from 'react';
+import { View, Text, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth0 } from '@/services/auth/auth0-provider';
+import { Button } from '@/components/ui/button';
+
+export default function SignUpScreen() {
+  const router = useRouter();
+  const { signUp } = useAuth0();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSignUp = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await signUp();
+      // Auth0Provider will handle navigation
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign up');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-white p-6">
+      <View className="flex-1 justify-center">
+        <Text className="text-3xl font-bold text-gray-900 mb-2">
+          Create Account
+        </Text>
+        <Text className="text-lg text-gray-600 mb-8">
+          Sign up with Auth0
+        </Text>
+
+        {error && (
+          <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <Text className="text-red-600">{error}</Text>
+          </View>
+        )}
+
+        <Button onPress={handleSignUp} disabled={isLoading}>
+          {isLoading ? 'Creating Account...' : 'Sign Up with Auth0'}
+        </Button>
+
+        <Pressable
+          onPress={() => router.push('/(public)/sign-in')}
+          className="mt-4"
+          disabled={isLoading}
+        >
+          <Text className="text-center text-gray-600">
+            Already have an account?{' '}
+            <Text className="text-primary-600 font-semibold">Sign In</Text>
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+```
+
+### B.9 Protect Routes with Auth0
+
+Update `src/app/(auth)/_layout.tsx`:
+
+```typescript
+import { Redirect, Tabs } from 'expo-router';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { useAuth0 } from '@/services/auth/auth0-provider';
+
+export default function AuthLayout() {
+  const { isAuthenticated, isLoading } = useAuth0();
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isAuthenticated) {
+    return <Redirect href="/(public)/sign-in" />;
+  }
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: '#e5e7eb',
+        },
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#6b7280',
+      }}
+    >
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>🏠</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="matches"
+        options={{
+          title: 'Matches',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚽</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>👤</Text>,
+        }}
+      />
+    </Tabs>
+  );
+}
+```
+
+### B.10 Update Profile Screen with Auth0
+
+Update `src/app/(auth)/profile.tsx`:
+
+```typescript
+import { View, Text, ScrollView } from 'react-native';
+import { useAuth0 } from '@/services/auth/auth0-provider';
+import { Button } from '@/components/ui/button';
+import { FadeInView } from '@/components/animated/fade-in-view';
+
+export default function ProfileScreen() {
+  const { user, signOut } = useAuth0();
+
+  return (
+    <ScrollView className="flex-1 bg-gray-50">
+      <View className="p-6">
+        <FadeInView>
+          <Text className="text-3xl font-bold text-gray-900 mb-6">Profile 👤</Text>
+        </FadeInView>
+
+        <FadeInView delay={200}>
+          <View className="bg-white rounded-lg p-6 mb-4">
+            <Text className="text-lg font-semibold text-gray-900 mb-1">
+              {user?.name || 'User'}
+            </Text>
+            <Text className="text-gray-600">{user?.email}</Text>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={400}>
+          <View className="bg-white rounded-lg p-6 mb-4">
+            <Text className="text-lg font-semibold text-gray-900 mb-4">
+              Auth0 Info
+            </Text>
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-gray-600">User ID</Text>
+              <Text className="font-mono text-xs">{user?.sub}</Text>
+            </View>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={600}>
+          <Button variant="outline" onPress={signOut}>
+            Sign Out
+          </Button>
+        </FadeInView>
+      </View>
+    </ScrollView>
+  );
+}
+```
+
+### B.11 Configure Deep Linking for Auth0
+
+Update `app.json`:
+
+```json
+{
+  "expo": {
+    "scheme": "bestshot",
+    "plugins": [
+      "expo-router",
+      [
+        "react-native-auth0",
+        {
+          "domain": "your-tenant.us.auth0.com"
+        }
+      ]
+    ]
+  }
+}
+```
+
+---
+
+## Verification
+
+Test authentication flow:
+
+```bash
+yarn start
+```
+
+**Test flow:**
+1. App opens → Should redirect to landing page
+2. Tap "Sign In" → Navigate to sign-in screen
+3. Enter credentials → Sign in successfully
+4. Should redirect to `/(auth)/home` with tabs
+5. Navigate to Profile → See user data
+6. Tap "Sign Out" → Clear auth and redirect to landing
+
+### Expected Outcome
+- ✅ Authentication working (Clerk or Custom)
+- ✅ Secure token storage with expo-secure-store
+- ✅ Protected routes redirecting unauthenticated users
+- ✅ Auth state managed globally
+- ✅ API requests include auth token
+- ✅ Sign out clears auth data
+- ✅ Persistent login across app restarts
+
+### Common Issues & Solutions
+- **Expo SecureStore errors on web:** Use AsyncStorage fallback for web
+- **401 errors:** Check token format in API interceptor
+- **Navigation loops:** Ensure auth check completes before navigation
+- **Token not persisting:** Verify SecureStore permissions
+
+### Next Phase
+Proceed to **Phase 7 - Email Infrastructure (Resend)**
 
 ## Phase 7 - Email Infrastructure (Resend)
 To be defined
 
 ## Phase 8 - State Management & Data Fetching (React Query)
 To be defined
-
-## Phase 9 - AI Features Integration (OpenAI)
+## Phase 9 - AI Features Integration (API Integration)
 To be defined
-
-## Phase 10 - Code Quality & Development Tools (Cursor, Figma, Willow Voice, Ebb)
+## Phase 10 - Code Quality & Development Tools
 To be defined
-
 ## Phase 11 - Payments & Subscriptions (RevenueCat)
 To be defined
-
 ## Phase 12 - Analytics & Monitoring (PostHog, Singular, AppTweak)
 To be defined
 
@@ -2482,12 +3448,12 @@ To be defined
 - [x] Phase 3 - Project Structure & TypeScript Configuration
 - [x] Phase 4 - File-System Routing
 - [x] Phase 5 - API Integration (Existing Backend)
-- [ ] Phase 6 - Authentication
-- [ ] Phase 7 - Email Infrastructure
-- [ ] Phase 8 - State Management & Data Fetching
-- [ ] Phase 9 - AI Features Integration
-- [ ] Phase 10 - Code Quality & Development Tools
-- [ ] Phase 11 - Payments & Subscriptions
+- [x] Phase 6 - Authentication (Clerk or Auth0)
+- [] Phase 7 - Email Infrastructure (API Integration)
+- [] Phase 8 - State Management & Data Fetching (Advanced Patterns)
+- [] Phase 9 - AI Features Integration (API Integration)
+- [] Phase 10 - Code Quality & Development Tools
+- [] Phase 11 - Payments & Subscriptions (RevenueCat)
 - [ ] Phase 12 - Analytics & Monitoring
 - [ ] Phase 13 - Error Tracking
 - [ ] Phase 14 - Landing Page & Blog
