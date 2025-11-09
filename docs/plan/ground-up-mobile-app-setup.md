@@ -3407,8 +3407,216 @@ yarn start
 ### Next Phase
 Proceed to **Phase 7 - Email Infrastructure (Resend)**
 
-## Phase 7 - Email Infrastructure (Resend)
-To be defined
+## Phase 7 - Email Infrastructure (API Integration)
+
+**Overview**: Integrate email functionality by consuming backend API email endpoints. The backend handles actual email sending (Resend, SendGrid, etc.). The mobile app triggers email operations through API calls.
+
+**Common Email Use Cases**:
+- Password reset requests
+- Email verification/confirmation
+- Match reminder notifications
+- Weekly digest subscriptions
+
+### 7.1 Create Email Service Layer
+
+**File**: `src/services/api/email.ts`
+
+```typescript
+import { apiClient } from './client';
+import type { ApiResponse } from '@/types/api/common';
+
+export interface RequestPasswordResetParams {
+  email: string;
+}
+
+export interface VerifyEmailParams {
+  token: string;
+}
+
+export const emailApi = {
+  requestPasswordReset: async (params: RequestPasswordResetParams): Promise<ApiResponse<void>> => {
+    const { data } = await apiClient.post('/auth/request-password-reset', params);
+    return data;
+  },
+
+  verifyEmail: async (params: VerifyEmailParams): Promise<ApiResponse<void>> => {
+    const { data } = await apiClient.post('/auth/verify-email', params);
+    return data;
+  },
+
+  resendVerification: async (): Promise<ApiResponse<void>> => {
+    const { data } = await apiClient.post('/users/resend-verification');
+    return data;
+  },
+};
+```
+
+### 7.2 Create React Query Mutations
+
+**File**: `src/hooks/mutations/use-email.ts`
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { emailApi } from '@/services/api/email';
+
+export const useRequestPasswordReset = () => {
+  return useMutation({
+    mutationFn: emailApi.requestPasswordReset,
+  });
+};
+
+export const useVerifyEmail = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: emailApi.verifyEmail,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+};
+
+export const useResendVerification = () => {
+  return useMutation({
+    mutationFn: emailApi.resendVerification,
+  });
+};
+```
+
+### 7.3 Create Forgot Password Screen
+
+**File**: `src/app/(public)/forgot-password.tsx`
+
+```typescript
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useRequestPasswordReset } from '@/hooks/mutations/use-email';
+
+export default function ForgotPasswordScreen() {
+  const [email, setEmail] = useState('');
+  const router = useRouter();
+  const { mutate: requestReset, isPending } = useRequestPasswordReset();
+
+  const handleSubmit = () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    requestReset({ email }, {
+      onSuccess: () => {
+        Alert.alert('Email Sent', 'Check your email for reset instructions', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
+      },
+      onError: (error: any) => {
+        Alert.alert('Error', error?.response?.data?.message || 'Failed to send reset email');
+      },
+    });
+  };
+
+  return (
+    <View className="flex-1 p-6 bg-white">
+      <Text className="text-2xl font-bold mb-2">Reset Password</Text>
+      <Text className="text-gray-600 mb-6">
+        Enter your email to receive reset instructions
+      </Text>
+
+      <TextInput
+        className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        editable={!isPending}
+      />
+
+      <TouchableOpacity
+        className={`bg-blue-500 rounded-lg py-3 ${isPending ? 'opacity-50' : ''}`}
+        onPress={handleSubmit}
+        disabled={isPending}
+      >
+        <Text className="text-white text-center font-semibold">
+          {isPending ? 'Sending...' : 'Send Reset Link'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity className="mt-4" onPress={() => router.back()}>
+        <Text className="text-blue-500 text-center">Back to Sign In</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+```
+
+### 7.4 Add Forgot Password Link
+
+**Update**: `src/app/(public)/sign-in.tsx`
+
+```typescript
+import { Link } from 'expo-router';
+
+// Add after password input:
+<View className="items-end mb-4">
+  <Link href="/(public)/forgot-password" asChild>
+    <TouchableOpacity>
+      <Text className="text-blue-500">Forgot Password?</Text>
+    </TouchableOpacity>
+  </Link>
+</View>
+```
+
+### 7.5 Handle Email Verification Deep Links
+
+**Update**: `src/app/_layout.tsx`
+
+```typescript
+import { useEffect } from 'react';
+import * as Linking from 'expo-linking';
+import { useVerifyEmail } from '@/hooks/mutations/use-email';
+
+export default function RootLayout() {
+  const { mutate: verifyEmail } = useVerifyEmail();
+
+  useEffect(() => {
+    const handleDeepLink = (url: string) => {
+      const { path, queryParams } = Linking.parse(url);
+
+      if (path === 'verify-email' && queryParams?.token) {
+        verifyEmail({ token: queryParams.token as string });
+      }
+    };
+
+    Linking.getInitialURL().then((url) => url && handleDeepLink(url));
+    const subscription = Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
+
+    return () => subscription.remove();
+  }, []);
+
+  // ... rest of layout
+}
+```
+
+---
+
+**Phase 7 Complete** ✅
+
+**What We Built**:
+- Email API service layer
+- React Query mutations for email operations
+- Forgot password flow
+- Deep linking for email verification
+
+**Key Takeaways**:
+- Backend handles email sending
+- Mobile app triggers via API calls
+- React Query manages state
+
+**Next Steps**:
+- Verify backend API endpoints match contracts
+- Test email flows end-to-end
 
 ## Phase 8 - State Management & Data Fetching (React Query)
 To be defined
@@ -3449,11 +3657,11 @@ To be defined
 - [x] Phase 4 - File-System Routing
 - [x] Phase 5 - API Integration (Existing Backend)
 - [x] Phase 6 - Authentication (Clerk or Auth0)
-- [] Phase 7 - Email Infrastructure (API Integration)
-- [] Phase 8 - State Management & Data Fetching (Advanced Patterns)
-- [] Phase 9 - AI Features Integration (API Integration)
-- [] Phase 10 - Code Quality & Development Tools
-- [] Phase 11 - Payments & Subscriptions (RevenueCat)
+- [x] Phase 7 - Email Infrastructure (API Integration)
+- [ ] Phase 8 - State Management & Data Fetching
+- [ ] Phase 9 - AI Features Integration
+- [ ] Phase 10 - Code Quality & Development Tools
+- [ ] Phase 11 - Payments & Subscriptions
 - [ ] Phase 12 - Analytics & Monitoring
 - [ ] Phase 13 - Error Tracking
 - [ ] Phase 14 - Landing Page & Blog
