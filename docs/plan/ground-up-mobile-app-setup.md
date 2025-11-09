@@ -769,13 +769,14 @@ src/
 │   ├── _layout.tsx              # Root layout
 │   ├── index.tsx                # Landing/home screen
 │   ├── +not-found.tsx           # 404 page
-│   ├── (auth)/                  # Auth group routes
+│   ├── (public)/                # Public routes (unauthenticated)
 │   │   ├── _layout.tsx
 │   │   ├── sign-in.tsx
 │   │   └── sign-up.tsx
-│   └── (app)/                   # Protected app routes
+│   └── (auth)/                  # Protected routes (authenticated)
 │       ├── _layout.tsx
 │       ├── home.tsx
+│       ├── matches.tsx
 │       └── profile.tsx
 │
 ├── components/                   # Reusable components
@@ -894,10 +895,11 @@ import type { StackScreenProps } from '@react-navigation/stack';
 // Define your route params
 export type RootStackParamList = {
   index: undefined;
-  '(auth)/sign-in': undefined;
-  '(auth)/sign-up': undefined;
-  '(app)/home': undefined;
-  '(app)/profile': { userId?: string };
+  '(public)/sign-in': undefined;
+  '(public)/sign-up': undefined;
+  '(auth)/home': undefined;
+  '(auth)/matches': undefined;
+  '(auth)/profile': { userId?: string };
   // Add more routes as needed
 };
 
@@ -1087,7 +1089,652 @@ Delete `src/test-imports.ts` after verification.
 Proceed to **Phase 4 - File-System Routing (expo-router)**
 
 ## Phase 4 - File-System Routing (expo-router)
-To be defined
+
+### Overview
+Set up expo-router for file-system based routing, create route groups for public and protected routes, and implement navigation patterns.
+
+### Route Group Strategy
+- **(public)** - Unauthenticated routes (landing, sign-in, sign-up)
+- **(auth)** - Protected/authenticated routes (home, matches, profile)
+
+### Key Concepts
+**expo-router** uses the file system to define routes, similar to Next.js:
+- Files in `src/app/` automatically become routes
+- `_layout.tsx` files define layout wrappers
+- Route groups `(name)` organize routes without affecting URLs (e.g., `(public)`, `(auth)`)
+- `+` prefix creates special routes (e.g., `+not-found.tsx`)
+
+### Steps
+
+#### 4.1 Create Root Layout
+
+Create `src/app/_layout.tsx`:
+
+```typescript
+import { Stack } from 'expo-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
+
+export default function RootLayout() {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000, // 1 minute
+            retry: 1,
+          },
+        },
+      })
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: 'white' },
+        }}
+      />
+    </QueryClientProvider>
+  );
+}
+```
+
+#### 4.2 Create Landing/Index Screen
+
+Create `src/app/index.tsx`:
+
+```typescript
+import { View, Text } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { Button } from '@/components/ui/button';
+import { FadeInView } from '@/components/animated/fade-in-view';
+
+export default function IndexScreen() {
+  const router = useRouter();
+
+  return (
+    <View className="flex-1 items-center justify-center bg-white p-6">
+      <FadeInView>
+        <Text className="text-4xl font-bold text-gray-900 mb-2">
+          Best Shot
+        </Text>
+        <Text className="text-lg text-gray-600 mb-8 text-center">
+          Your football match prediction game
+        </Text>
+
+        <View className="w-full gap-3">
+          <Button onPress={() => router.push('/(public)/sign-in')}>
+            Sign In
+          </Button>
+          <Button
+            variant="outline"
+            onPress={() => router.push('/(public)/sign-up')}
+          >
+            Create Account
+          </Button>
+        </View>
+      </FadeInView>
+    </View>
+  );
+}
+```
+
+#### 4.3 Create Public Route Group
+
+Create the public group directory and layout:
+
+```bash
+mkdir -p src/app/\(public\)
+```
+
+Create `src/app/(public)/_layout.tsx`:
+
+```typescript
+import { Stack } from 'expo-router';
+
+export default function PublicLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: 'white' },
+      }}
+    />
+  );
+}
+```
+
+#### 4.4 Create Sign In Screen
+
+Create `src/app/(public)/sign-in.tsx`:
+
+```typescript
+import { useState } from 'react';
+import { View, Text, TextInput, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Button } from '@/components/ui/button';
+
+export default function SignInScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSignIn = () => {
+    // TODO: Implement actual sign in logic in Phase 6
+    console.log('Sign in with:', email, password);
+    router.replace('/(auth)/home');
+  };
+
+  return (
+    <View className="flex-1 bg-white p-6">
+      <View className="flex-1 justify-center">
+        <Text className="text-3xl font-bold text-gray-900 mb-8">
+          Welcome Back
+        </Text>
+
+        <View className="gap-4 mb-6">
+          <View>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Email
+            </Text>
+            <TextInput
+              className="border border-gray-300 rounded-lg px-4 py-3"
+              placeholder="your@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Password
+            </Text>
+            <TextInput
+              className="border border-gray-300 rounded-lg px-4 py-3"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+          </View>
+        </View>
+
+        <Button onPress={handleSignIn}>Sign In</Button>
+
+        <Pressable
+          onPress={() => router.push('/(public)/sign-up')}
+          className="mt-4"
+        >
+          <Text className="text-center text-gray-600">
+            Don't have an account?{' '}
+            <Text className="text-primary-600 font-semibold">Sign Up</Text>
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+```
+
+#### 4.5 Create Sign Up Screen
+
+Create `src/app/(public)/sign-up.tsx`:
+
+```typescript
+import { useState } from 'react';
+import { View, Text, TextInput, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Button } from '@/components/ui/button';
+
+export default function SignUpScreen() {
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSignUp = () => {
+    // TODO: Implement actual sign up logic in Phase 6
+    console.log('Sign up with:', name, email, password);
+    router.replace('/(auth)/home');
+  };
+
+  return (
+    <View className="flex-1 bg-white p-6">
+      <View className="flex-1 justify-center">
+        <Text className="text-3xl font-bold text-gray-900 mb-8">
+          Create Account
+        </Text>
+
+        <View className="gap-4 mb-6">
+          <View>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Name
+            </Text>
+            <TextInput
+              className="border border-gray-300 rounded-lg px-4 py-3"
+              placeholder="Your name"
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
+
+          <View>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Email
+            </Text>
+            <TextInput
+              className="border border-gray-300 rounded-lg px-4 py-3"
+              placeholder="your@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Password
+            </Text>
+            <TextInput
+              className="border border-gray-300 rounded-lg px-4 py-3"
+              placeholder="Create a password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+          </View>
+        </View>
+
+        <Button onPress={handleSignUp}>Create Account</Button>
+
+        <Pressable
+          onPress={() => router.push('/(public)/sign-in')}
+          className="mt-4"
+        >
+          <Text className="text-center text-gray-600">
+            Already have an account?{' '}
+            <Text className="text-primary-600 font-semibold">Sign In</Text>
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+```
+
+#### 4.6 Create Auth Route Group (Protected Routes)
+
+Create the auth group directory:
+
+```bash
+mkdir -p src/app/\(auth\)
+```
+
+Create `src/app/(auth)/_layout.tsx`:
+
+```typescript
+import { Tabs } from 'expo-router';
+import { View, Text } from 'react-native';
+
+export default function AuthLayout() {
+  // TODO: Add auth check in Phase 6
+  // const { isAuthenticated } = useAuth();
+  // if (!isAuthenticated) {
+  //   return <Redirect href="/(public)/sign-in" />;
+  // }
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: '#e5e7eb',
+        },
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#6b7280',
+      }}
+    >
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>🏠</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="matches"
+        options={{
+          title: 'Matches',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>⚽</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>👤</Text>
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}
+```
+
+#### 4.7 Create Home Screen
+
+Create `src/app/(auth)/home.tsx`:
+
+```typescript
+import { View, Text, ScrollView } from 'react-native';
+import { Button } from '@/components/ui/button';
+import { FadeInView } from '@/components/animated/fade-in-view';
+
+export default function HomeScreen() {
+  return (
+    <ScrollView className="flex-1 bg-gray-50">
+      <View className="p-6">
+        <FadeInView>
+          <Text className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome! 👋
+          </Text>
+          <Text className="text-lg text-gray-600 mb-6">
+            Ready to make your predictions?
+          </Text>
+        </FadeInView>
+
+        <FadeInView delay={200}>
+          <View className="bg-white rounded-lg p-6 mb-4">
+            <Text className="text-xl font-semibold text-gray-900 mb-2">
+              Upcoming Matches
+            </Text>
+            <Text className="text-gray-600">
+              No matches scheduled yet. Check back soon!
+            </Text>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={400}>
+          <View className="bg-white rounded-lg p-6">
+            <Text className="text-xl font-semibold text-gray-900 mb-2">
+              Your Stats
+            </Text>
+            <Text className="text-gray-600 mb-4">
+              Track your prediction accuracy and compete with friends
+            </Text>
+            <Button variant="outline">View Leaderboard</Button>
+          </View>
+        </FadeInView>
+      </View>
+    </ScrollView>
+  );
+}
+```
+
+#### 4.8 Create Matches Screen
+
+Create `src/app/(auth)/matches.tsx`:
+
+```typescript
+import { View, Text, ScrollView } from 'react-native';
+import { FadeInView } from '@/components/animated/fade-in-view';
+
+export default function MatchesScreen() {
+  return (
+    <ScrollView className="flex-1 bg-gray-50">
+      <View className="p-6">
+        <FadeInView>
+          <Text className="text-3xl font-bold text-gray-900 mb-6">
+            Matches ⚽
+          </Text>
+        </FadeInView>
+
+        <FadeInView delay={200}>
+          <View className="bg-white rounded-lg p-6">
+            <Text className="text-lg text-gray-600 text-center">
+              Match list will be populated from the API in Phase 5
+            </Text>
+          </View>
+        </FadeInView>
+      </View>
+    </ScrollView>
+  );
+}
+```
+
+#### 4.9 Create Profile Screen
+
+Create `src/app/(auth)/profile.tsx`:
+
+```typescript
+import { View, Text, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Button } from '@/components/ui/button';
+import { FadeInView } from '@/components/animated/fade-in-view';
+
+export default function ProfileScreen() {
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    // TODO: Implement actual sign out logic in Phase 6
+    router.replace('/');
+  };
+
+  return (
+    <ScrollView className="flex-1 bg-gray-50">
+      <View className="p-6">
+        <FadeInView>
+          <Text className="text-3xl font-bold text-gray-900 mb-6">
+            Profile 👤
+          </Text>
+        </FadeInView>
+
+        <FadeInView delay={200}>
+          <View className="bg-white rounded-lg p-6 mb-4">
+            <Text className="text-lg font-semibold text-gray-900 mb-1">
+              Guest User
+            </Text>
+            <Text className="text-gray-600">guest@example.com</Text>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={400}>
+          <View className="bg-white rounded-lg p-6 mb-4">
+            <Text className="text-lg font-semibold text-gray-900 mb-4">
+              Account Settings
+            </Text>
+            <Button variant="outline" onPress={() => {}}>
+              Edit Profile
+            </Button>
+          </View>
+        </FadeInView>
+
+        <FadeInView delay={600}>
+          <Button variant="outline" onPress={handleSignOut}>
+            Sign Out
+          </Button>
+        </FadeInView>
+      </View>
+    </ScrollView>
+  );
+}
+```
+
+#### 4.10 Create 404 Not Found Screen
+
+Create `src/app/+not-found.tsx`:
+
+```typescript
+import { View, Text } from 'react-native';
+import { Link } from 'expo-router';
+import { Button } from '@/components/ui/button';
+
+export default function NotFoundScreen() {
+  return (
+    <View className="flex-1 items-center justify-center bg-white p-6">
+      <Text className="text-6xl mb-4">404</Text>
+      <Text className="text-2xl font-bold text-gray-900 mb-2">
+        Page Not Found
+      </Text>
+      <Text className="text-gray-600 mb-8 text-center">
+        The page you're looking for doesn't exist
+      </Text>
+      <Link href="/" asChild>
+        <Button>Go Home</Button>
+      </Link>
+    </View>
+  );
+}
+```
+
+#### 4.11 Add Deep Linking Configuration
+
+Update `app.json` to include deep linking scheme:
+
+```json
+{
+  "expo": {
+    "scheme": "bestshot",
+    "plugins": ["expo-router"]
+  }
+}
+```
+
+#### 4.12 Create Navigation Utilities
+
+Create `src/utils/navigation.ts`:
+
+```typescript
+import { router } from 'expo-router';
+
+/**
+ * Navigate to a route and reset the navigation stack
+ */
+export const navigateAndReset = (route: string) => {
+  router.replace(route as any);
+};
+
+/**
+ * Go back or navigate to fallback if no history
+ */
+export const goBackOrNavigate = (fallback: string) => {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.push(fallback as any);
+  }
+};
+```
+
+### Route Structure Overview
+
+After Phase 4, your routing structure will be:
+
+```
+Routes:
+├── /                           → Landing page (index.tsx)
+├── /(public)/sign-in          → Sign in screen
+├── /(public)/sign-up          → Sign up screen
+└── /(auth)/                   → Protected routes with tab navigation
+    ├── home                   → Home screen
+    ├── matches                → Matches list
+    └── profile                → User profile
+
+Special:
+└── +not-found                 → 404 page
+```
+
+### Navigation Patterns
+
+**1. Push to a route:**
+```typescript
+import { useRouter } from 'expo-router';
+
+const router = useRouter();
+router.push('/(public)/sign-in');
+```
+
+**2. Replace current route (no back button):**
+```typescript
+router.replace('/(auth)/home'); // After successful login
+```
+
+**3. Go back:**
+```typescript
+router.back();
+```
+
+**4. Using Link component:**
+```typescript
+import { Link } from 'expo-router';
+
+<Link href="/(auth)/home">Go to Home</Link>
+```
+
+**5. Deep linking:**
+```bash
+# Will work after proper configuration
+bestshot://auth/profile
+bestshot://public/sign-in
+```
+
+### Verification
+
+Test the routing setup:
+
+```bash
+# Start the app
+yarn start
+
+# Test on your platform
+yarn ios
+# or
+yarn android
+# or
+yarn web
+```
+
+**Test flow:**
+1. Land on index screen → See "Sign In" and "Create Account" buttons
+2. Tap "Sign In" → Navigate to sign-in screen
+3. Fill in credentials and sign in → Navigate to home with tabs
+4. Navigate between Home, Matches, Profile tabs
+5. Sign out → Return to index screen
+
+### Expected Outcome
+- ✅ File-system based routing configured with expo-router
+- ✅ Root layout with React Query provider
+- ✅ Landing/index screen with navigation
+- ✅ Public route group (sign-in, sign-up) under (public)
+- ✅ Protected route group with tab navigation under (auth)
+- ✅ Home, Matches, Profile screens created
+- ✅ 404 not-found screen
+- ✅ Deep linking configured
+- ✅ Navigation utilities created
+- ✅ All routes properly typed
+
+### Key Benefits
+- **Type-safe routing**: expo-router provides TypeScript support
+- **File-system based**: Routes are automatically created from files
+- **Nested layouts**: Layouts can be nested for complex navigation
+- **Deep linking**: Built-in support for universal links
+- **Code splitting**: Automatic code splitting per route
+
+### Next Phase
+Proceed to **Phase 5 - Backend Infrastructure (Convex)**
 
 ## Phase 5 - Backend Infrastructure (Convex)
 To be defined
@@ -1138,7 +1785,7 @@ To be defined
 - [x] Phase 1 - Project Initialization & Core Setup
 - [x] Phase 2 - Styling System
 - [x] Phase 3 - Project Structure & TypeScript Configuration
-- [ ] Phase 4 - File-System Routing
+- [x] Phase 4 - File-System Routing
 - [ ] Phase 5 - Backend Infrastructure
 - [ ] Phase 6 - Authentication
 - [ ] Phase 7 - Email Infrastructure
