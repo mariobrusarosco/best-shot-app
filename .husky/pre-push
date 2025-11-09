@@ -1,2 +1,0 @@
-# Pre-push hook can be used for integration tests or other slower checks
-# TypeScript checking is now handled at pre-commit for faster feedback 
