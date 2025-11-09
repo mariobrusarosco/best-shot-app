@@ -1736,8 +1736,703 @@ yarn web
 ### Next Phase
 Proceed to **Phase 5 - Backend Infrastructure (Convex)**
 
-## Phase 5 - Backend Infrastructure (Convex)
-To be defined
+## Phase 5 - API Integration (Existing Backend)
+
+### Overview
+Integrate with the existing Best Shot API, set up API client with axios, configure React Query for data fetching, and create typed API services.
+
+### API Details
+- **Base URL:** `https://api-best-shot-staging.mariobrusarosco.com/`
+- **Environment:** Staging (demo)
+- **Type:** RESTful API
+
+### Goals
+- Configure axios API client
+- Set up environment variables for API URL
+- Create typed API service layer
+- Integrate with React Query for caching and state management
+- Create example queries and mutations
+- Handle authentication headers
+
+### Steps
+
+#### 5.1 Install Dependencies
+
+We already have React Query from Phase 1. Now add axios:
+
+```bash
+yarn add axios
+```
+
+#### 5.2 Configure Environment Variables
+
+Update `.env.example`:
+
+```bash
+# API Configuration
+EXPO_PUBLIC_API_URL=https://api-best-shot-staging.mariobrusarosco.com
+```
+
+Create `.env.local`:
+
+```bash
+EXPO_PUBLIC_API_URL=https://api-best-shot-staging.mariobrusarosco.com
+```
+
+Update `src/config/env.ts`:
+
+```typescript
+/**
+ * Environment configuration
+ * Uses Expo environment variables (prefixed with EXPO_PUBLIC_)
+ */
+
+export const env = {
+  // API Configuration
+  apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api-best-shot-staging.mariobrusarosco.com',
+
+  // App Configuration
+  isDev: process.env.NODE_ENV === 'development',
+  isProd: process.env.NODE_ENV === 'production',
+} as const;
+
+// Validate required env vars
+if (!env.apiUrl) {
+  throw new Error('Missing required environment variable: EXPO_PUBLIC_API_URL');
+}
+```
+
+#### 5.3 Create Axios API Client
+
+Create `src/services/api/client.ts`:
+
+```typescript
+import axios from 'axios';
+import { env } from '@/config/env';
+
+/**
+ * Axios instance configured for Best Shot API
+ */
+export const apiClient = axios.create({
+  baseURL: env.apiUrl,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+/**
+ * Request interceptor - Add auth token to requests
+ */
+apiClient.interceptors.request.use(
+  (config) => {
+    // TODO: Get token from secure storage in Phase 6
+    // const token = await getAuthToken();
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+/**
+ * Response interceptor - Handle errors globally
+ */
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401) {
+      // TODO: Redirect to login in Phase 6
+      console.warn('Unauthorized - redirect to login');
+    }
+
+    // Handle 500 Server Error
+    if (error.response?.status >= 500) {
+      console.error('Server error:', error.response.data);
+    }
+
+    return Promise.reject(error);
+  }
+);
+```
+
+#### 5.4 Create API Type Definitions
+
+Create `src/types/api/matches.ts`:
+
+```typescript
+import type { BaseEntity } from '@/types/common';
+
+/**
+ * Match entity from API
+ */
+export interface Match extends BaseEntity {
+  homeTeam: string;
+  awayTeam: string;
+  homeTeamLogo?: string;
+  awayTeamLogo?: string;
+  date: string;
+  venue?: string;
+  homeScore?: number;
+  awayScore?: number;
+  status: 'upcoming' | 'live' | 'finished';
+  league?: string;
+}
+
+/**
+ * Prediction entity from API
+ */
+export interface Prediction extends BaseEntity {
+  userId: string;
+  matchId: string;
+  homeScore: number;
+  awayScore: number;
+  points?: number;
+}
+
+/**
+ * Leaderboard entry from API
+ */
+export interface LeaderboardEntry {
+  userId: string;
+  username: string;
+  avatar?: string;
+  totalPoints: number;
+  correctPredictions: number;
+  rank: number;
+}
+```
+
+Create `src/types/api/user.ts`:
+
+```typescript
+import type { BaseEntity } from '@/types/common';
+
+/**
+ * User entity from API
+ */
+export interface User extends BaseEntity {
+  email: string;
+  username: string;
+  avatar?: string;
+  totalPoints: number;
+  correctPredictions: number;
+}
+
+/**
+ * Auth response from API
+ */
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+/**
+ * Login credentials
+ */
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+/**
+ * Registration data
+ */
+export interface RegisterData {
+  email: string;
+  username: string;
+  password: string;
+}
+```
+
+#### 5.5 Create API Endpoint Services
+
+Create `src/services/api/endpoints/matches.ts`:
+
+```typescript
+import { apiClient } from '../client';
+import type { Match, Prediction } from '@/types/api/matches';
+import type { ApiResponse, PaginatedResponse } from '@/types/common';
+
+/**
+ * Matches API endpoints
+ */
+export const matchesApi = {
+  /**
+   * Get all matches
+   */
+  getAll: async (): Promise<Match[]> => {
+    const { data } = await apiClient.get<ApiResponse<Match[]>>('/matches');
+    return data.data;
+  },
+
+  /**
+   * Get upcoming matches
+   */
+  getUpcoming: async (): Promise<Match[]> => {
+    const { data } = await apiClient.get<ApiResponse<Match[]>>('/matches/upcoming');
+    return data.data;
+  },
+
+  /**
+   * Get match by ID
+   */
+  getById: async (id: string): Promise<Match> => {
+    const { data } = await apiClient.get<ApiResponse<Match>>(`/matches/${id}`);
+    return data.data;
+  },
+
+  /**
+   * Get live matches
+   */
+  getLive: async (): Promise<Match[]> => {
+    const { data } = await apiClient.get<ApiResponse<Match[]>>('/matches/live');
+    return data.data;
+  },
+};
+
+/**
+ * Predictions API endpoints
+ */
+export const predictionsApi = {
+  /**
+   * Get user's predictions
+   */
+  getMyPredictions: async (): Promise<Prediction[]> => {
+    const { data } = await apiClient.get<ApiResponse<Prediction[]>>('/predictions/me');
+    return data.data;
+  },
+
+  /**
+   * Create a prediction
+   */
+  create: async (prediction: {
+    matchId: string;
+    homeScore: number;
+    awayScore: number;
+  }): Promise<Prediction> => {
+    const { data } = await apiClient.post<ApiResponse<Prediction>>(
+      '/predictions',
+      prediction
+    );
+    return data.data;
+  },
+
+  /**
+   * Update a prediction
+   */
+  update: async (
+    id: string,
+    prediction: { homeScore: number; awayScore: number }
+  ): Promise<Prediction> => {
+    const { data } = await apiClient.put<ApiResponse<Prediction>>(
+      `/predictions/${id}`,
+      prediction
+    );
+    return data.data;
+  },
+
+  /**
+   * Delete a prediction
+   */
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/predictions/${id}`);
+  },
+};
+```
+
+Create `src/services/api/endpoints/auth.ts`:
+
+```typescript
+import { apiClient } from '../client';
+import type {
+  AuthResponse,
+  LoginCredentials,
+  RegisterData,
+  User,
+} from '@/types/api/user';
+import type { ApiResponse } from '@/types/common';
+
+/**
+ * Authentication API endpoints
+ */
+export const authApi = {
+  /**
+   * Login user
+   */
+  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    const { data } = await apiClient.post<ApiResponse<AuthResponse>>(
+      '/auth/login',
+      credentials
+    );
+    return data.data;
+  },
+
+  /**
+   * Register new user
+   */
+  register: async (userData: RegisterData): Promise<AuthResponse> => {
+    const { data } = await apiClient.post<ApiResponse<AuthResponse>>(
+      '/auth/register',
+      userData
+    );
+    return data.data;
+  },
+
+  /**
+   * Get current user
+   */
+  me: async (): Promise<User> => {
+    const { data } = await apiClient.get<ApiResponse<User>>('/auth/me');
+    return data.data;
+  },
+
+  /**
+   * Logout user
+   */
+  logout: async (): Promise<void> => {
+    await apiClient.post('/auth/logout');
+  },
+};
+```
+
+Create `src/services/api/endpoints/leaderboard.ts`:
+
+```typescript
+import { apiClient } from '../client';
+import type { LeaderboardEntry } from '@/types/api/matches';
+import type { ApiResponse } from '@/types/common';
+
+/**
+ * Leaderboard API endpoints
+ */
+export const leaderboardApi = {
+  /**
+   * Get global leaderboard
+   */
+  getGlobal: async (limit = 100): Promise<LeaderboardEntry[]> => {
+    const { data } = await apiClient.get<ApiResponse<LeaderboardEntry[]>>(
+      '/leaderboard',
+      { params: { limit } }
+    );
+    return data.data;
+  },
+
+  /**
+   * Get user's rank
+   */
+  getMyRank: async (): Promise<LeaderboardEntry> => {
+    const { data } = await apiClient.get<ApiResponse<LeaderboardEntry>>(
+      '/leaderboard/me'
+    );
+    return data.data;
+  },
+};
+```
+
+Create `src/services/api/index.ts` (barrel export):
+
+```typescript
+export * from './client';
+export * from './endpoints/matches';
+export * from './endpoints/auth';
+export * from './endpoints/leaderboard';
+```
+
+#### 5.6 Create React Query Hooks
+
+Create `src/hooks/queries/use-matches.ts`:
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { matchesApi } from '@/services/api';
+
+/**
+ * Query keys for matches
+ */
+export const matchesKeys = {
+  all: ['matches'] as const,
+  upcoming: ['matches', 'upcoming'] as const,
+  live: ['matches', 'live'] as const,
+  detail: (id: string) => ['matches', id] as const,
+};
+
+/**
+ * Get all matches
+ */
+export const useMatches = () => {
+  return useQuery({
+    queryKey: matchesKeys.all,
+    queryFn: matchesApi.getAll,
+  });
+};
+
+/**
+ * Get upcoming matches
+ */
+export const useUpcomingMatches = () => {
+  return useQuery({
+    queryKey: matchesKeys.upcoming,
+    queryFn: matchesApi.getUpcoming,
+  });
+};
+
+/**
+ * Get live matches
+ */
+export const useLiveMatches = () => {
+  return useQuery({
+    queryKey: matchesKeys.live,
+    queryFn: matchesApi.getLive,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+};
+
+/**
+ * Get match by ID
+ */
+export const useMatch = (id: string) => {
+  return useQuery({
+    queryKey: matchesKeys.detail(id),
+    queryFn: () => matchesApi.getById(id),
+    enabled: !!id, // Only run if ID exists
+  });
+};
+```
+
+Create `src/hooks/mutations/use-predictions.ts`:
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { predictionsApi } from '@/services/api';
+import { matchesKeys } from '../queries/use-matches';
+
+/**
+ * Create a prediction
+ */
+export const useCreatePrediction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: predictionsApi.create,
+    onSuccess: () => {
+      // Invalidate matches queries to refetch with new predictions
+      queryClient.invalidateQueries({ queryKey: matchesKeys.all });
+    },
+  });
+};
+
+/**
+ * Update a prediction
+ */
+export const useUpdatePrediction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string; homeScore: number; awayScore: number }) =>
+      predictionsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: matchesKeys.all });
+    },
+  });
+};
+
+/**
+ * Delete a prediction
+ */
+export const useDeletePrediction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: predictionsApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: matchesKeys.all });
+    },
+  });
+};
+```
+
+#### 5.7 Update Matches Screen with Real Data
+
+Update `src/app/(auth)/matches.tsx`:
+
+```typescript
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { FadeInView } from '@/components/animated/fade-in-view';
+import { useUpcomingMatches } from '@/hooks/queries/use-matches';
+import { formatDate } from '@/utils/formatting/date';
+
+export default function MatchesScreen() {
+  const { data: matches, isLoading, error } = useUpcomingMatches();
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50">
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text className="text-gray-600 mt-4">Loading matches...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50 p-6">
+        <Text className="text-red-600 text-center">
+          Failed to load matches. Please try again.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView className="flex-1 bg-gray-50">
+      <View className="p-6">
+        <FadeInView>
+          <Text className="text-3xl font-bold text-gray-900 mb-6">
+            Upcoming Matches ⚽
+          </Text>
+        </FadeInView>
+
+        {matches && matches.length === 0 && (
+          <FadeInView delay={200}>
+            <View className="bg-white rounded-lg p-6">
+              <Text className="text-lg text-gray-600 text-center">
+                No upcoming matches at the moment
+              </Text>
+            </View>
+          </FadeInView>
+        )}
+
+        {matches?.map((match, index) => (
+          <FadeInView key={match.id} delay={200 + index * 100}>
+            <View className="bg-white rounded-lg p-4 mb-3">
+              <Text className="text-sm text-gray-500 mb-2">
+                {formatDate(match.date)}
+              </Text>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-lg font-semibold text-gray-900 flex-1">
+                  {match.homeTeam}
+                </Text>
+                <Text className="text-gray-400 mx-4">vs</Text>
+                <Text className="text-lg font-semibold text-gray-900 flex-1 text-right">
+                  {match.awayTeam}
+                </Text>
+              </View>
+              {match.venue && (
+                <Text className="text-sm text-gray-500 mt-2">
+                  📍 {match.venue}
+                </Text>
+              )}
+            </View>
+          </FadeInView>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+```
+
+#### 5.8 Create Error Boundary (Optional but Recommended)
+
+Create `src/components/error-boundary.tsx`:
+
+```typescript
+import React from 'react';
+import { View, Text } from 'react-native';
+import { Button } from './ui/button';
+
+interface Props {
+  children: React.ReactNode;
+}
+
+interface State {
+  hasError: boolean;
+  error?: Error;
+}
+
+export class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View className="flex-1 items-center justify-center bg-gray-50 p-6">
+          <Text className="text-2xl font-bold text-gray-900 mb-2">
+            Oops! Something went wrong
+          </Text>
+          <Text className="text-gray-600 mb-6 text-center">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </Text>
+          <Button onPress={() => this.setState({ hasError: false })}>
+            Try Again
+          </Button>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+### Verification
+
+Test the API integration:
+
+```bash
+# Start the app
+yarn start
+
+# Test on your platform
+yarn ios
+# or
+yarn android
+# or
+yarn web
+```
+
+**Test flow:**
+1. Navigate to Matches screen
+2. Verify matches load from API
+3. Check loading state while fetching
+4. Test error handling (turn off internet)
+5. Verify data displays correctly
+
+### Expected Outcome
+- ✅ Axios API client configured
+- ✅ Environment variables set up for API URL
+- ✅ Typed API service layer created
+- ✅ React Query hooks for queries and mutations
+- ✅ Example implementation in Matches screen
+- ✅ Loading and error states handled
+- ✅ Request/response interceptors configured
+- ✅ Ready for authentication integration in Phase 6
+
+### Key Benefits
+- **Type Safety**: Full TypeScript support for API responses
+- **Caching**: React Query handles caching automatically
+- **Error Handling**: Centralized error handling with interceptors
+- **Reusability**: API functions can be reused across the app
+- **Testability**: API layer is isolated and easy to mock
+
+### Next Steps
+- Phase 6 will add authentication token management
+- Phase 12 will add analytics to track API errors
+- Phase 13 will add error tracking (Sentry)
+
+### Next Phase
+Proceed to **Phase 6 - Authentication (Clerk or Custom)**
 
 ## Phase 6 - Authentication (Clerk or Convex Auth)
 To be defined
@@ -1786,7 +2481,7 @@ To be defined
 - [x] Phase 2 - Styling System
 - [x] Phase 3 - Project Structure & TypeScript Configuration
 - [x] Phase 4 - File-System Routing
-- [ ] Phase 5 - Backend Infrastructure
+- [x] Phase 5 - API Integration (Existing Backend)
 - [ ] Phase 6 - Authentication
 - [ ] Phase 7 - Email Infrastructure
 - [ ] Phase 8 - State Management & Data Fetching
