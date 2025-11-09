@@ -3618,8 +3618,257 @@ export default function RootLayout() {
 - Verify backend API endpoints match contracts
 - Test email flows end-to-end
 
-## Phase 8 - State Management & Data Fetching (React Query)
-To be defined
+## Phase 8 - State Management & Data Fetching (React Query Advanced Patterns)
+
+**Overview**: Build on the React Query foundation from Phase 5. Implement advanced patterns like optimistic updates, infinite queries, prefetching, and offline support for a production-ready data layer.
+
+**Note**: Basic React Query setup was completed in Phase 5. This phase adds **advanced patterns** only.
+
+### 8.1 Setup Infinite Queries for Pagination
+
+**File**: `src/hooks/queries/use-infinite-matches.ts`
+
+```typescript
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { matchesApi } from '@/services/api/matches';
+
+export const useInfiniteMatches = (status?: 'upcoming' | 'live' | 'finished') => {
+  return useInfiniteQuery({
+    queryKey: ['matches', 'infinite', status],
+    queryFn: ({ pageParam = 0 }) =>
+      matchesApi.getMatchesPaginated({
+        page: pageParam,
+        status,
+        limit: 20,
+      }),
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.hasMore ? pages.length : undefined,
+    initialPageParam: 0,
+  });
+};
+```
+
+**Usage**:
+```typescript
+const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteMatches('upcoming');
+
+const matches = data?.pages.flatMap(page => page.matches) ?? [];
+```
+
+### 8.2 Implement Optimistic Updates
+
+**File**: `src/hooks/mutations/use-predictions.ts`
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { predictionsApi } from '@/services/api/predictions';
+
+export const useCreatePrediction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: predictionsApi.create,
+
+    // Optimistic update - update UI immediately
+    onMutate: async (newPrediction) => {
+      await queryClient.cancelQueries({ queryKey: ['predictions', newPrediction.matchId] });
+
+      const previous = queryClient.getQueryData(['predictions', newPrediction.matchId]);
+
+      queryClient.setQueryData(['predictions', newPrediction.matchId], (old: any[]) => [
+        ...old,
+        { ...newPrediction, id: `temp-${Date.now()}` }
+      ]);
+
+      return { previous };
+    },
+
+    // Rollback on error
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(
+        ['predictions', variables.matchId],
+        context?.previous
+      );
+    },
+
+    // Refetch after success
+    onSettled: (data, error, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['predictions', variables.matchId] });
+    },
+  });
+};
+```
+
+### 8.3 Setup Query Prefetching
+
+**File**: `src/hooks/prefetch/use-prefetch-match.ts`
+
+```typescript
+import { useQueryClient } from '@tanstack/react-query';
+import { matchesApi } from '@/services/api/matches';
+
+export const usePrefetchMatch = () => {
+  const queryClient = useQueryClient();
+
+  return (matchId: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['matches', matchId],
+      queryFn: () => matchesApi.getById(matchId),
+      staleTime: 10 * 60 * 1000, // 10 minutes
+    });
+  };
+};
+```
+
+**Usage in Match Card**:
+```typescript
+const prefetchMatch = usePrefetchMatch();
+
+<TouchableOpacity
+  onPressIn={() => prefetchMatch(match.id)}
+  onPress={() => router.push(`/matches/${match.id}`)}
+>
+  {/* Match card content */}
+</TouchableOpacity>
+```
+
+### 8.4 Create Query Key Factory
+
+**File**: `src/services/api/query-keys.ts`
+
+Centralize query keys for consistency:
+
+```typescript
+export const queryKeys = {
+  matches: {
+    all: ['matches'] as const,
+    lists: () => [...queryKeys.matches.all, 'list'] as const,
+    upcoming: () => [...queryKeys.matches.lists(), 'upcoming'] as const,
+    live: () => [...queryKeys.matches.lists(), 'live'] as const,
+    detail: (id: string) => [...queryKeys.matches.all, 'detail', id] as const,
+  },
+  predictions: {
+    all: ['predictions'] as const,
+    byMatch: (matchId: string) => [...queryKeys.predictions.all, 'match', matchId] as const,
+    byUser: (userId: string) => [...queryKeys.predictions.all, 'user', userId] as const,
+  },
+  user: {
+    all: ['user'] as const,
+    profile: () => [...queryKeys.user.all, 'profile'] as const,
+  },
+};
+```
+
+**Update hooks to use factory**:
+```typescript
+export const useUpcomingMatches = () => {
+  return useQuery({
+    queryKey: queryKeys.matches.upcoming(),
+    queryFn: matchesApi.getUpcoming,
+  });
+};
+```
+
+### 8.5 Configure React Native Optimizations
+
+**Update**: `src/store/query-client.ts`
+
+```typescript
+import { QueryClient } from '@tanstack/react-query';
+import { focusManager, onlineManager } from '@tanstack/react-query';
+import { AppState } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+
+// Track online status
+onlineManager.setEventListener((setOnline) => {
+  return NetInfo.addEventListener((state) => {
+    setOnline(!!state.isConnected);
+  });
+});
+
+// Refetch on app focus
+focusManager.setEventListener((handleFocus) => {
+  const subscription = AppState.addEventListener('change', (status) => {
+    handleFocus(status === 'active');
+  });
+  return () => subscription.remove();
+});
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+  },
+});
+```
+
+**Install NetInfo**:
+```bash
+npx expo install @react-native-community/netinfo
+```
+
+### 8.6 Setup Offline Persistence (Optional)
+
+**Install persistence**:
+```bash
+npm install @tanstack/react-query-persist-client
+npm install @tanstack/query-async-storage-persister
+```
+
+**Configure**: `src/store/query-client.ts`
+
+```typescript
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export const persister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+  throttleTime: 1000,
+});
+```
+
+**Update**: `src/app/_layout.tsx`
+
+```typescript
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { queryClient, persister } from '@/store/query-client';
+
+export default function RootLayout() {
+  return (
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+      <Slot />
+    </PersistQueryClientProvider>
+  );
+}
+```
+
+---
+
+**Phase 8 Complete** ✅
+
+**What We Built**:
+- Infinite queries for pagination
+- Optimistic updates for instant UI feedback
+- Query prefetching for better UX
+- Query key factory for consistency
+- React Native optimizations (online/focus managers)
+- Optional offline persistence
+
+**Key Takeaways**:
+- React Query handles 90% of state management needs
+- Optimistic updates provide instant feedback
+- Prefetching eliminates loading spinners
+- Query key factory prevents typos
+
+**Next Steps**:
+- Monitor query cache size in production
+- Adjust staleTime based on data volatility
 ## Phase 9 - AI Features Integration (API Integration)
 To be defined
 ## Phase 10 - Code Quality & Development Tools
@@ -3658,7 +3907,7 @@ To be defined
 - [x] Phase 5 - API Integration (Existing Backend)
 - [x] Phase 6 - Authentication (Clerk or Auth0)
 - [x] Phase 7 - Email Infrastructure (API Integration)
-- [ ] Phase 8 - State Management & Data Fetching
+- [x] Phase 8 - State Management & Data Fetching (Advanced Patterns)
 - [ ] Phase 9 - AI Features Integration
 - [ ] Phase 10 - Code Quality & Development Tools
 - [ ] Phase 11 - Payments & Subscriptions
