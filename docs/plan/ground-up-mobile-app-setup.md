@@ -620,7 +620,471 @@ export function LottieLoader({ source }: { source: any }) {
 Proceed to **Phase 3 - Project Structure & TypeScript Configuration**
 
 ## Phase 3 - Project Structure & TypeScript Configuration
-To be defined
+
+### Overview
+Configure TypeScript for strict type safety, set up module path aliases for cleaner imports, and establish a scalable project structure.
+
+### Goals
+- Enable TypeScript strict mode for maximum type safety
+- Configure path aliases (@/) for cleaner imports
+- Set up Babel module resolver
+- Organize project structure for scalability
+- Create type definitions and utility types
+
+### Steps
+
+#### 3.1 Enhanced TypeScript Configuration
+
+We already configured basic TypeScript in Phase 1. Now let's enhance it with additional compiler options.
+
+Update `tsconfig.json`:
+
+```json
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    // Strict Type Checking
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // Module Resolution
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/store/*": ["./src/store/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/constants/*": ["./src/constants/*"],
+      "@/assets/*": ["./src/assets/*"]
+    },
+
+    // Additional Options
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
+```
+
+#### 3.2 Configure Babel Module Resolver
+
+Install babel-plugin-module-resolver:
+
+```bash
+yarn add --dev babel-plugin-module-resolver
+```
+
+Update `babel.config.js`:
+
+```js
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      'nativewind/babel',
+      [
+        'module-resolver',
+        {
+          root: ['./src'],
+          alias: {
+            '@': './src',
+            '@/components': './src/components',
+            '@/hooks': './src/hooks',
+            '@/utils': './src/utils',
+            '@/types': './src/types',
+            '@/services': './src/services',
+            '@/store': './src/store',
+            '@/config': './src/config',
+            '@/constants': './src/constants',
+            '@/assets': './src/assets',
+          },
+          extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        },
+      ],
+      'react-native-reanimated/plugin', // Must be listed last
+    ],
+  };
+};
+```
+
+#### 3.3 Finalize Project Structure
+
+Create remaining directories and organization:
+
+```bash
+# Create feature-based structure
+mkdir -p src/features
+
+# Create services subdirectories
+mkdir -p src/services/api
+mkdir -p src/services/auth
+mkdir -p src/services/storage
+
+# Create additional component directories
+mkdir -p src/components/layouts
+mkdir -p src/components/features
+
+# Create hooks subdirectories
+mkdir -p src/hooks/queries
+mkdir -p src/hooks/mutations
+
+# Create types subdirectories
+mkdir -p src/types/api
+mkdir -p src/types/entities
+
+# Create utils subdirectories
+mkdir -p src/utils/validation
+mkdir -p src/utils/formatting
+
+# Create assets subdirectories
+mkdir -p src/assets/animations
+mkdir -p src/assets/icons
+```
+
+**Final Project Structure:**
+
+```
+src/
+├── app/                          # Expo Router screens (file-system routing)
+│   ├── _layout.tsx              # Root layout
+│   ├── index.tsx                # Landing/home screen
+│   ├── +not-found.tsx           # 404 page
+│   ├── (auth)/                  # Auth group routes
+│   │   ├── _layout.tsx
+│   │   ├── sign-in.tsx
+│   │   └── sign-up.tsx
+│   └── (app)/                   # Protected app routes
+│       ├── _layout.tsx
+│       ├── home.tsx
+│       └── profile.tsx
+│
+├── components/                   # Reusable components
+│   ├── ui/                      # Base UI components (Button, Input, Card)
+│   ├── animated/                # Animated components (FadeInView, etc.)
+│   ├── layouts/                 # Layout components (Screen, Container)
+│   └── features/                # Feature-specific components
+│
+├── features/                     # Feature modules (optional, for large apps)
+│   └── [feature-name]/
+│       ├── components/
+│       ├── hooks/
+│       ├── services/
+│       └── types/
+│
+├── hooks/                        # Custom React hooks
+│   ├── queries/                 # React Query hooks (useGetUser, etc.)
+│   ├── mutations/               # React Query mutations (useUpdateProfile, etc.)
+│   └── use-auth.ts              # Auth hook example
+│
+├── services/                     # External services & API
+│   ├── api/                     # API client and endpoints
+│   │   ├── client.ts           # Axios/fetch client
+│   │   └── endpoints/          # API endpoint definitions
+│   ├── auth/                    # Authentication service
+│   └── storage/                 # AsyncStorage utilities
+│
+├── store/                        # Global state management
+│   ├── use-user-store.ts       # User state (Zustand)
+│   └── use-app-store.ts        # App state (Zustand)
+│
+├── types/                        # TypeScript type definitions
+│   ├── api/                     # API response types
+│   ├── entities/                # Domain entities (User, Match, etc.)
+│   ├── navigation.ts            # Navigation types
+│   └── common.ts                # Common/shared types
+│
+├── utils/                        # Utility functions
+│   ├── validation/              # Validation helpers
+│   ├── formatting/              # Date/number formatters
+│   └── helpers.ts               # General helpers
+│
+├── config/                       # App configuration
+│   ├── env.ts                   # Environment variables
+│   └── constants.ts             # App constants
+│
+├── constants/                    # Design system constants
+│   ├── theme.ts                 # Theme colors, spacing, etc.
+│   └── styles.ts                # Global styles
+│
+└── assets/                       # Static assets
+    ├── images/                  # Images, icons
+    ├── fonts/                   # Custom fonts
+    └── animations/              # Lottie JSON files (when needed)
+```
+
+#### 3.4 Create Common Type Definitions
+
+Create `src/types/common.ts`:
+
+```typescript
+// Common utility types
+export type Nullable<T> = T | null;
+export type Optional<T> = T | undefined;
+export type Maybe<T> = T | null | undefined;
+
+// API response wrapper types
+export interface ApiResponse<T> {
+  data: T;
+  success: boolean;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+}
+
+// Common entity types
+export interface BaseEntity {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Form state types
+export interface FormState<T> {
+  values: T;
+  errors: Partial<Record<keyof T, string>>;
+  isSubmitting: boolean;
+  isDirty: boolean;
+}
+
+// Loading states
+export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+export interface AsyncState<T> {
+  data: T | null;
+  status: LoadingState;
+  error: Error | null;
+}
+```
+
+#### 3.5 Create Navigation Types (for expo-router)
+
+Create `src/types/navigation.ts`:
+
+```typescript
+import type { StackScreenProps } from '@react-navigation/stack';
+
+// Define your route params
+export type RootStackParamList = {
+  index: undefined;
+  '(auth)/sign-in': undefined;
+  '(auth)/sign-up': undefined;
+  '(app)/home': undefined;
+  '(app)/profile': { userId?: string };
+  // Add more routes as needed
+};
+
+// Screen props helper type
+export type ScreenProps<T extends keyof RootStackParamList> = StackScreenProps<
+  RootStackParamList,
+  T
+>;
+```
+
+#### 3.6 Create Utility Functions
+
+Create `src/utils/helpers.ts`:
+
+```typescript
+/**
+ * Sleep utility for async operations
+ */
+export const sleep = (ms: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+/**
+ * Safely parse JSON with fallback
+ */
+export const safeJsonParse = <T>(json: string, fallback: T): T => {
+  try {
+    return JSON.parse(json) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+/**
+ * Check if value is defined (not null or undefined)
+ */
+export const isDefined = <T>(value: T | null | undefined): value is T => {
+  return value !== null && value !== undefined;
+};
+
+/**
+ * Truncate string with ellipsis
+ */
+export const truncate = (str: string, length: number): string => {
+  return str.length > length ? `${str.slice(0, length)}...` : str;
+};
+```
+
+Create `src/utils/formatting/date.ts`:
+
+```typescript
+/**
+ * Format date to relative time (e.g., "2 hours ago")
+ */
+export const formatRelativeTime = (date: Date | string): string => {
+  const now = new Date();
+  const past = new Date(date);
+  const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return 'just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+  return past.toLocaleDateString();
+};
+
+/**
+ * Format date to readable string
+ */
+export const formatDate = (date: Date | string, locale = 'en-US'): string => {
+  return new Date(date).toLocaleDateString(locale, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+```
+
+#### 3.7 Create Environment Configuration
+
+Create `src/config/env.ts`:
+
+```typescript
+/**
+ * Environment configuration
+ * Uses Expo environment variables (prefixed with EXPO_PUBLIC_)
+ */
+
+const getEnvVar = (key: string): string => {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing environment variable: ${key}`);
+  }
+  return value;
+};
+
+export const env = {
+  // API Configuration
+  apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api',
+
+  // Feature Flags (optional, will be filled in later phases)
+  // clerkPublishableKey: getEnvVar('EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY'),
+  // convexUrl: getEnvVar('EXPO_PUBLIC_CONVEX_URL'),
+
+  // App Configuration
+  isDev: process.env.NODE_ENV === 'development',
+  isProd: process.env.NODE_ENV === 'production',
+} as const;
+```
+
+Create `.env.example`:
+
+```bash
+# API Configuration
+EXPO_PUBLIC_API_URL=http://localhost:3000/api
+
+# Authentication (to be filled in Phase 6)
+# EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=
+
+# Backend (to be filled in Phase 5)
+# EXPO_PUBLIC_CONVEX_URL=
+```
+
+#### 3.8 Update .gitignore for Environment Files
+
+Ensure `.gitignore` includes:
+
+```
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+```
+
+### Verification
+
+After completing Phase 3, verify the setup:
+
+```bash
+# Type check should pass with strict mode
+yarn type-check
+
+# Test path aliases by creating a test file
+# Create src/test-imports.ts
+```
+
+Create `src/test-imports.ts` to test aliases:
+
+```typescript
+// Test path aliases
+import { theme } from '@/constants/theme';
+import { Button } from '@/components/ui/button';
+import { env } from '@/config/env';
+import type { ApiResponse } from '@/types/common';
+
+// If this file compiles without errors, path aliases are working
+console.log('Path aliases working!');
+```
+
+Run type check:
+```bash
+yarn type-check
+```
+
+Delete `src/test-imports.ts` after verification.
+
+### Expected Outcome
+- ✅ TypeScript strict mode enabled with enhanced compiler options
+- ✅ Path aliases (@/) configured in both TypeScript and Babel
+- ✅ Project structure organized and scalable
+- ✅ Common type definitions created
+- ✅ Utility functions established
+- ✅ Environment configuration set up
+- ✅ Navigation types defined
+- ✅ All imports using clean @/ syntax
+
+### Benefits of This Setup
+- **Type Safety**: Strict mode catches more bugs at compile time
+- **Clean Imports**: `@/components/ui/button` instead of `../../../components/ui/button`
+- **Scalability**: Clear separation of concerns with organized structure
+- **Maintainability**: Easy to find and organize code
+- **DX Improvements**: Better autocomplete and navigation in IDE
+
+### Next Phase
+Proceed to **Phase 4 - File-System Routing (expo-router)**
 
 ## Phase 4 - File-System Routing (expo-router)
 To be defined
@@ -673,7 +1137,7 @@ To be defined
 
 - [x] Phase 1 - Project Initialization & Core Setup
 - [x] Phase 2 - Styling System
-- [ ] Phase 3 - Project Structure & TypeScript Configuration
+- [x] Phase 3 - Project Structure & TypeScript Configuration
 - [ ] Phase 4 - File-System Routing
 - [ ] Phase 5 - Backend Infrastructure
 - [ ] Phase 6 - Authentication
