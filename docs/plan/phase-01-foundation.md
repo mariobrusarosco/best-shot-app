@@ -19,11 +19,11 @@
 
 ### Task 1.1: Install Xcode (macOS only, ~1-2 hours)
 
-- [ ] Open Mac App Store
-- [ ] Search for "Xcode"
-- [ ] Download and install Xcode (large download ~10-15 GB)
-- [ ] Open Xcode once installed to accept license agreements
-- [ ] Install Xcode Command Line Tools:
+- [x] Open Mac App Store
+- [x] Search for "Xcode"
+- [x] Download and install Xcode (large download ~10-15 GB)
+- [x] Open Xcode once installed to accept license agreements
+- [x] Install Xcode Command Line Tools:
   ```bash
   xcode-select --install
   ```
@@ -35,12 +35,12 @@
 
 ### Task 1.2: Set up iOS Simulator (macOS only)
 
-- [ ] Open Xcode
-- [ ] Go to Xcode → Settings → Platforms
-- [ ] Download iOS simulator runtime (if not already installed)
-- [ ] Open Simulator app (Xcode → Open Developer Tool → Simulator)
-- [ ] Choose a device (e.g., iPhone 15 Pro)
-- [ ] Verify simulator boots successfully
+- [x] Open Xcode
+- [x] Go to Xcode → Settings → Platforms
+- [x] Download iOS simulator runtime (if not already installed)
+- [x] Open Simulator app (Xcode → Open Developer Tool → Simulator)
+- [x] Choose a device (e.g., iPhone 15 Pro)
+- [x] Verify simulator boots successfully
 
 ### Task 1.3: Install Android Studio (~30-60 minutes)
 
@@ -89,11 +89,11 @@
 
 ### Task 2.1: Create Expo Project with TypeScript
 
-- [ ] Navigate to workspace directory:
+- [X] Navigate to workspace directory:
   ```bash
   cd ~/coding/best-shot-app
   ```
-- [ ] Create new Expo project with TypeScript template:
+- [x] Create new Expo project with TypeScript template:
   ```bash
   npx create-expo-app@latest mobile --template expo-template-blank-typescript
   ```
