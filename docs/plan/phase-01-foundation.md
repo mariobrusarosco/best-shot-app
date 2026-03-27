@@ -44,9 +44,9 @@
 
 ### Task 1.3: Install Android Studio (~30-60 minutes)
 
-- [ ] Download Android Studio from https://developer.android.com/studio
-- [ ] Run installer and follow setup wizard
-- [ ] Choose "Standard" installation
+- [x] Download Android Studio from https://developer.android.com/studio
+- [x] Run installer and follow setup wizard
+- [x] Choose "Standard" installation
 - [ ] Wait for Android SDK and tools to download
 - [ ] Complete installation and launch Android Studio
 
@@ -60,6 +60,7 @@
 - [ ] Finish emulator creation
 - [ ] Launch emulator to verify it works
 - [ ] Set environment variables (add to `.bashrc`, `.zshrc`, or equivalent):
+
   ```bash
   export ANDROID_HOME=$HOME/Library/Android/sdk  # macOS
   # OR
@@ -70,6 +71,7 @@
   export PATH=$PATH:$ANDROID_HOME/emulator
   export PATH=$PATH:$ANDROID_HOME/platform-tools
   ```
+
 - [ ] Restart terminal and verify:
   ```bash
   adb --version
@@ -89,7 +91,7 @@
 
 ### Task 2.1: Create Expo Project with TypeScript
 
-- [X] Navigate to workspace directory:
+- [x] Navigate to workspace directory:
   ```bash
   cd ~/coding/best-shot-app
   ```
@@ -128,7 +130,7 @@
 
 - [x] With Expo dev server running, press `i` in terminal
 - [x] Wait for iOS Simulator to launch and app to install
-- [X] Verify app loads with default Expo template
+- [x] Verify app loads with default Expo template
 - [x] Try making a change in `App.tsx` (e.g., change text)
 - [x] Verify hot reload works (changes appear automatically)
 
@@ -169,63 +171,85 @@
 
 ### Task 3.2: Install and Configure NativeWind (Tailwind CSS)
 
-- [ ] Install NativeWind and dependencies:
+- [x] Install NativeWind and dependencies:
   ```bash
   npm install nativewind
-  npm install --save-dev tailwindcss
+  npx expo install react-native-safe-area-context
+  npm install --save-dev tailwindcss@^3.4.17 prettier-plugin-tailwindcss@^0.5.11
   ```
-- [ ] Initialize Tailwind config:
+- [x] Initialize Tailwind config:
   ```bash
   npx tailwindcss init
   ```
-- [ ] Update `tailwind.config.js`:
+- [x] Update `tailwind.config.js`:
   ```js
   /** @type {import('tailwindcss').Config} */
   module.exports = {
-    content: [
-      "./App.{js,jsx,ts,tsx}",
-      "./app/**/*.{js,jsx,ts,tsx}",
-      "./components/**/*.{js,jsx,ts,tsx}",
-      "./screens/**/*.{js,jsx,ts,tsx}"
-    ],
+    content: ["./App.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}"],
+    presets: [require("nativewind/preset")],
     theme: {
       extend: {},
     },
     plugins: [],
-  }
-  ```
-- [ ] Update `babel.config.js` to include NativeWind:
-  ```js
-  module.exports = function (api) {
-    api.cache(true);
-    return {
-      presets: ['babel-preset-expo'],
-      plugins: ['nativewind/babel'],
-    };
   };
   ```
-- [ ] Create `global.css` (or `app.css`) for Tailwind directives (optional for basic setup)
-- [ ] Restart Expo dev server (stop and run `npx expo start` again)
-
-### Task 3.3: Install and Configure React Native Reanimated
-
-- [ ] Install Reanimated:
-  ```bash
-  npx expo install react-native-reanimated
+- [] Create `global.css` with Tailwind directives:
+  ```css
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
   ```
-- [ ] Update `babel.config.js` to include Reanimated plugin (must be last):
+- [] Create or update `metro.config.js`:
+
+  ```js
+  const { getDefaultConfig } = require("expo/metro-config");
+  const { withNativeWind } = require("nativewind/metro");
+
+  const config = getDefaultConfig(__dirname);
+
+  module.exports = withNativeWind(config, { input: "./global.css" });
+  ```
+
+- [x] Update `babel.config.js` for NativeWind:
   ```js
   module.exports = function (api) {
     api.cache(true);
     return {
-      presets: ['babel-preset-expo'],
-      plugins: [
-        'nativewind/babel',
-        'react-native-reanimated/plugin', // Must be last!
+      presets: [
+        ["babel-preset-expo", { jsxImportSource: "nativewind" }],
+        "nativewind/babel",
       ],
     };
   };
   ```
+- [x] Update `app.json` so web also uses the Metro bundler:
+  ```json
+  {
+    "expo": {
+      "web": {
+        "bundler": "metro"
+      }
+    }
+  }
+  ```
+- [x] Recommended TypeScript setup: create `nativewind-env.d.ts`
+  ```ts
+  /// <reference types="nativewind/types" />
+  ```
+- [x] Usually no extra config is needed after creating the file because TypeScript picks up root-level `.d.ts` files automatically
+- [x] If your editor still shows stale errors, restart the TypeScript server in VS Code: Cmd+Shift+P -> "Restart TS Server"
+- [x] Import `./global.css` in your top-level component file (`App.tsx` for now)
+- [x] Restart Expo dev server (stop and run `npx expo start` again)
+
+### Task 3.3: Install and Configure React Native Reanimated
+
+- [ ] Install Reanimated with Expo-managed versions:
+  ```bash
+  npx expo install react-native-reanimated react-native-worklets
+  ```
+- [ ] If Reanimated already came in as a NativeWind peer dependency, running the Expo install step here will align it to Expo-supported versions
+- [ ] Note: in current Expo-managed projects, no extra Reanimated Babel plugin step is required
+- [ ] Keep using `babel-preset-expo`; Expo configures the Reanimated Babel plugin automatically
 - [ ] Clear cache and restart:
   ```bash
   npx expo start -c
@@ -234,32 +258,34 @@
 ### Task 3.4: Test NativeWind Configuration
 
 - [ ] Update `App.tsx` to use Tailwind classes:
+
   ```tsx
-  import { View, Text } from 'react-native';
+  import "./global.css";
+  import { View, Text } from "react-native";
 
   export default function App() {
     return (
       <View className="flex-1 items-center justify-center bg-blue-500">
-        <Text className="text-white text-2xl font-bold">
-          Hello NativeWind!
-        </Text>
+        <Text className="text-white text-2xl font-bold">Hello NativeWind!</Text>
       </View>
     );
   }
   ```
+
 - [ ] Verify blue background and white styled text appears
-- [ ] If styles don't apply, check Babel config and restart dev server
+- [ ] If styles don't apply, check Babel config, Metro config, and `global.css` import, then restart dev server
 
 ### Task 3.5: Test Reanimated Configuration
 
 - [ ] Update `App.tsx` with simple animation:
+
   ```tsx
-  import { View, Text, Pressable } from 'react-native';
+  import { View, Text, Pressable } from "react-native";
   import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
-  } from 'react-native-reanimated';
+  } from "react-native-reanimated";
 
   export default function App() {
     const offset = useSharedValue(0);
@@ -287,8 +313,9 @@
     );
   }
   ```
+
 - [ ] Verify pressing button animates text to the right
-- [ ] If animation doesn't work, check Reanimated is last plugin in Babel config
+- [ ] If animation doesn't work, restart Expo with a cleared cache and verify Reanimated was installed with `expo install`
 
 ---
 
@@ -296,19 +323,23 @@
 
 ### Task 4.1: Set Up Folder Structure
 
-- [ ] Create core directories:
+- [x] Create core directories:
   ```bash
-  mkdir -p src/{components,screens,navigation,services,hooks,types,utils,constants,config,assets,store}
+  mkdir -p src/{app,api,assets,configuration,constants,domains,stores,types,ui-system,utils}
+  mkdir -p src/domains/dashboard/{components,hooks,screens,server-state}
+  mkdir -p src/domains/global/{components,hooks,server-state}
   ```
-- [ ] Verify structure:
+- [x] Verify structure:
   ```bash
   tree src -L 1
   # Should show all created folders
   ```
+- [ ] Note: we are not creating top-level `screens`, `navigation`, `config`, or `store` folders
+- [ ] Reason: Expo Router will own route files in `src/app`, and feature code should live in `src/domains`
 
 ### Task 4.2: Update TypeScript Path Aliases
 
-- [ ] Update `tsconfig.json` to add path aliases:
+- [x] Update `tsconfig.json` to add path aliases:
   ```json
   {
     "extends": "expo/tsconfig.base",
@@ -321,45 +352,21 @@
     }
   }
   ```
-- [ ] Install Babel module resolver:
-  ```bash
-  npm install --save-dev babel-plugin-module-resolver
-  ```
-- [ ] Update `babel.config.js`:
-  ```js
-  module.exports = function (api) {
-    api.cache(true);
-    return {
-      presets: ['babel-preset-expo'],
-      plugins: [
-        [
-          'module-resolver',
-          {
-            root: ['./'],
-            alias: {
-              '@': './src',
-            },
-          },
-        ],
-        'nativewind/babel',
-        'react-native-reanimated/plugin',
-      ],
-    };
-  };
-  ```
+- [ ] Restart Expo dev server after changing `tsconfig.json`
+- [ ] Verify `@/` imports work without adding `babel-plugin-module-resolver`
+- [ ] Note: in a standard Expo project, TypeScript path aliases from `tsconfig.json` are supported automatically by Expo CLI
 
 ### Task 4.3: Create First Test Screen
 
-- [ ] Create `src/screens/HomeScreen.tsx`:
+- [ ] Create `src/domains/dashboard/screens/HomeScreen.tsx`:
+
   ```tsx
-  import { View, Text } from 'react-native';
+  import { View, Text } from "react-native";
 
   export function HomeScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-slate-900">
-        <Text className="text-white text-3xl font-bold">
-          Best Shot Mobile
-        </Text>
+        <Text className="text-white text-3xl font-bold">Best Shot Mobile</Text>
         <Text className="text-slate-400 text-lg mt-2">
           Phase 1 Complete! 🎉
         </Text>
@@ -371,15 +378,18 @@
 ### Task 4.4: Update App.tsx to Use New Screen
 
 - [ ] Update `App.tsx`:
+
   ```tsx
-  import { HomeScreen } from '@/screens/HomeScreen';
+  import { HomeScreen } from "@/domains/dashboard/screens/HomeScreen";
 
   export default function App() {
     return <HomeScreen />;
   }
   ```
+
 - [ ] Verify path alias works (no import errors)
 - [ ] Verify screen displays correctly
+- [ ] Note: once Expo Router is added in Phase 2, route files in `src/app` should render domain screens like this instead of introducing a new top-level `screens` folder
 
 ---
 
@@ -394,7 +404,7 @@
 
 ### Task 5.2: Test Hot Reload
 
-- [ ] Change text in `HomeScreen.tsx`
+- [ ] Change text in `src/domains/dashboard/screens/HomeScreen.tsx`
 - [ ] Verify change appears on all running platforms without manual refresh
 - [ ] Change Tailwind classes (e.g., `bg-slate-900` → `bg-purple-900`)
 - [ ] Verify style change appears
@@ -454,31 +464,43 @@ Before moving to Phase 2, ensure you understand:
 ## Troubleshooting
 
 ### Issue: NativeWind styles not applying
+
 **Solution:**
-- Verify `babel.config.js` includes `'nativewind/babel'`
+
+- Verify `babel.config.js` includes the NativeWind preset configuration
+- Verify `metro.config.js` wraps the config with `withNativeWind(...)`
+- Verify `./global.css` is imported from your top-level component file
 - Clear cache: `npx expo start -c`
 - Check `tailwind.config.js` content paths include your files
 
 ### Issue: Reanimated not working
+
 **Solution:**
-- Ensure `'react-native-reanimated/plugin'` is LAST in Babel plugins array
+
+- Ensure Reanimated was installed with `npx expo install react-native-reanimated react-native-worklets`
 - Clear cache: `npx expo start -c`
 - Rebuild app (close and relaunch from dev server)
 
 ### Issue: Android emulator won't connect
+
 **Solution:**
+
 - Verify emulator is running (`adb devices` should list device)
 - Ensure `ANDROID_HOME` environment variable is set
 - Try `adb reverse tcp:8081 tcp:8081`
 
 ### Issue: iOS Simulator not opening
+
 **Solution:**
+
 - Ensure Xcode Command Line Tools installed: `xcode-select --install`
 - Try opening Simulator manually first
 - Check Expo output for specific errors
 
 ### Issue: Path aliases not working
+
 **Solution:**
-- Verify both `tsconfig.json` and `babel.config.js` have matching alias config
+
+- Verify `tsconfig.json` maps `@/*` to `src/*`
 - Restart TypeScript server in VS Code: Cmd+Shift+P → "Restart TS Server"
-- Clear cache and restart Expo
+- Restart Expo CLI after changing `tsconfig.json`
