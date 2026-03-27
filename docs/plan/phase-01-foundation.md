@@ -97,11 +97,11 @@
   ```bash
   npx create-expo-app@latest mobile --template expo-template-blank-typescript
   ```
-- [ ] Navigate into project:
+- [x] Navigate into project:
   ```bash
   cd mobile
   ```
-- [ ] Verify project structure created:
+- [x] Verify project structure created:
   ```bash
   ls -la
   # Should see: app.json, package.json, App.tsx, tsconfig.json, etc.
@@ -109,12 +109,12 @@
 
 ### Task 2.2: Start Development Server
 
-- [ ] Start Expo development server:
+- [x] Start Expo development server:
   ```bash
   npx expo start
   ```
-- [ ] Verify QR code and options appear in terminal
-- [ ] Leave server running for next tasks
+- [x] Verify QR code and options appear in terminal
+- [x] Leave server running for next tasks
 
 ### Task 2.3: Verify App on Physical Device (Expo Go)
 
@@ -126,11 +126,11 @@
 
 ### Task 2.4: Verify App on iOS Simulator (macOS only)
 
-- [ ] With Expo dev server running, press `i` in terminal
-- [ ] Wait for iOS Simulator to launch and app to install
-- [ ] Verify app loads with default Expo template
-- [ ] Try making a change in `App.tsx` (e.g., change text)
-- [ ] Verify hot reload works (changes appear automatically)
+- [x] With Expo dev server running, press `i` in terminal
+- [x] Wait for iOS Simulator to launch and app to install
+- [X] Verify app loads with default Expo template
+- [x] Try making a change in `App.tsx` (e.g., change text)
+- [x] Verify hot reload works (changes appear automatically)
 
 ### Task 2.5: Verify App on Android Emulator
 
@@ -149,23 +149,23 @@
 
 ### Task 3.1: Install EAS CLI
 
-- [ ] Install EAS CLI globally:
+- [x] Install EAS CLI globally:
   ```bash
   npm install -g eas-cli
   ```
-- [ ] Verify installation:
+- [x] Verify installation:
   ```bash
   eas --version
   ```
-- [ ] Login to Expo account (create one if needed):
+- [x] Login to Expo account (create one if needed):
   ```bash
   eas login
   ```
-- [ ] Initialize EAS in project:
+- [x] Initialize EAS in project:
   ```bash
   eas build:configure
   ```
-- [ ] Verify `eas.json` was created
+- [x] Verify `eas.json` was created
 
 ### Task 3.2: Install and Configure NativeWind (Tailwind CSS)
 
